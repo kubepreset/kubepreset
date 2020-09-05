@@ -34,10 +34,86 @@ spec:
         spec:
           description: ServiceBindingSpec defines the desired state of ServiceBinding
           properties:
-            foo:
-              description: Foo is an example field of ServiceBinding. Edit ServiceBinding_types.go
-                to remove/update
-              type: string
+            application:
+              description: 'Application resource to inject the binding info. It could
+                be any process running within a container. From the spec: A Service
+                Binding resource **MUST** define a `.spec.application` which is an
+                `ObjectReference`-like declaration to a `PodSpec`-able resource.  A
+                `ServiceBinding` **MAY** define the application reference by-name
+                or by-[label selector][ls]. A name and selector **MUST NOT** be defined
+                in the same reference.'
+              properties:
+                apiVersion:
+                  description: API version of the referent.
+                  type: string
+                kind:
+                  description: Kind of the referent.
+                  type: string
+                name:
+                  description: Name of the referent. Mutually exclusive with Selector.
+                  type: string
+                selector:
+                  description: Selector of the referents. Mutually exclusive with
+                    Name.
+                  properties:
+                    matchExpressions:
+                      description: matchExpressions is a list of label selector requirements.
+                        The requirements are ANDed.
+                      items:
+                        description: A label selector requirement is a selector that
+                          contains values, a key, and an operator that relates the
+                          key and values.
+                        properties:
+                          key:
+                            description: key is the label key that the selector applies
+                              to.
+                            type: string
+                          operator:
+                            description: operator represents a key's relationship
+                              to a set of values. Valid operators are In, NotIn, Exists
+                              and DoesNotExist.
+                            type: string
+                          values:
+                            description: values is an array of string values. If the
+                              operator is In or NotIn, the values array must be non-empty.
+                              If the operator is Exists or DoesNotExist, the values
+                              array must be empty. This array is replaced during a
+                              strategic merge patch.
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - key
+                        - operator
+                        type: object
+                      type: array
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      description: matchLabels is a map of {key,value} pairs. A single
+                        {key,value} in the matchLabels map is equivalent to an element
+                        of matchExpressions, whose key field is "key", the operator
+                        is "In", and the values array contains only "value". The requirements
+                        are ANDed.
+                      type: object
+                  type: object
+              type: object
+            service:
+              description: 'Service referencing the binding secret From the spec:
+                A Service Binding resource **MUST** define a `.spec.service` which
+                is an `ObjectReference`-like declaration to a Provisioned Service-able
+                resource.'
+              properties:
+                apiVersion:
+                  description: API version of the referent.
+                  type: string
+                kind:
+                  description: Kind of the referent.
+                  type: string
+                name:
+                  description: Name of the referent. Mutually exclusive with Selector.
+                  type: string
+              type: object
           type: object
         status:
           description: ServiceBindingStatus defines the observed state of ServiceBinding
