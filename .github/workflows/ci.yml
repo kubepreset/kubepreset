@@ -5,7 +5,6 @@ on:
     branches:
     - '**'
     - '!dependabot/**'
-  pull_request: {}
 
 jobs:
 
