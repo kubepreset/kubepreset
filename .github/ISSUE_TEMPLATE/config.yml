@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: KubePreset Community Support
+    url: https://groups.google.com/g/kubepreset
+    about: Ask and answer questions here
+  - name: KubePreset Security Issues
+    url: baiju.m.mail@gmail.com
+    about: Report security vulnerabilities directly to the owner
