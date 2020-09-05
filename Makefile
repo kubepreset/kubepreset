@@ -78,3 +78,21 @@ CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
+
+# download golangci-lint
+# binary will be $(go env GOPATH)/bin/golangci-lint
+golangci-lint:
+ifeq (, $(shell which golangci-lint))
+	@{ \
+	set -e ;\
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v1.30.0 ;\
+	golangci-lint --version ;\
+	}
+GOLANGCI_LINT=$(GOBIN)/golangci-lint
+else
+GOLANGCI_LINT=$(shell which golangci-lint)
+endif
+
+# Run golangci-lint
+lint: golangci-lint
+	${GOLANGCI_LINT} run
