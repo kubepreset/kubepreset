@@ -93,6 +93,15 @@ else
 GOLANGCI_LINT=$(shell which golangci-lint)
 endif
 
-# Run golangci-lint
-lint: golangci-lint
+
+# Run golangci-lint and yamllint
+lint-go: golangci-lint
 	${GOLANGCI_LINT} run
+
+YAML_FILES := $(shell find . -path ./vendor -prune -o -type f -regex ".*y[a]ml" -print)
+
+# Run yamllint
+lint-yaml: ${YAML_FILES}
+	yamllint -c .yamllint $(YAML_FILES)
+
+lint: lint-go lint-yaml

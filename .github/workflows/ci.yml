@@ -31,6 +31,9 @@ jobs:
         with:
           version: v1.30
 
+      - name: Run yamllint
+        uses: karancode/yamllint-github-action@v2.0.0
+
   test:
     name: Test
     needs: build
