@@ -1,0 +1,23 @@
+name: Developer Certificate of Origin
+on:
+  push:
+    branches:
+    - '**'
+    - '!dependabot/**'
+  pull_request: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+    - name: Check Developer Certificate of Origin
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        pip3 install -U dco-check
+        dco-check
