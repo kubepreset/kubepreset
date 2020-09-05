@@ -1,4 +1,4 @@
-name: Continuous Delivery Pipeline
+name: Continuous Delivery
 
 on:
   release:
