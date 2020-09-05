@@ -1,0 +1,8 @@
+theme: jekyll-theme-cayman
+title: "KubePreset"
+description: "Streamline Application Connectivity with Backing Services"
+github:
+  repository_url: https://github.com/kubepreset/kubepreset
+  is_project_page: true
+  owner_url: "https://groups.google.com/g/kubepreset"
+  owner_name: "KubePreset Team (kubepreset@googlegroups.com)"
