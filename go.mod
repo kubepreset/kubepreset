@@ -1,4 +1,4 @@
-module gitub.com/kubepreset/kubepreset
+module github.com/kubepreset/kubepreset
 
 go 1.13
 

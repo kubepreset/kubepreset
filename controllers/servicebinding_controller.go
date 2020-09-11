@@ -24,7 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	appv1alpha1 "gitub.com/kubepreset/kubepreset/api/v1alpha1"
+	appv1alpha1 "github.com/kubepreset/kubepreset/api/v1alpha1"
 )
 
 // ServiceBindingReconciler reconciles a ServiceBinding object
