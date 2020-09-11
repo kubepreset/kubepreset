@@ -37,33 +37,44 @@ type ServiceBindingSpec struct {
 	// resource.  A `ServiceBinding` **MAY** define the application
 	// reference by-name or by-[label selector][ls]. A name and selector
 	// **MUST NOT** be defined in the same reference.
-	Application *Application `json:"application,omitempty"`
+	Application *Application `json:"application"`
 
 	// Service referencing the binding secret
 	// From the spec:
 	// A Service Binding resource **MUST** define a `.spec.service` which is
 	// an `ObjectReference`-like declaration to a Provisioned Service-able
 	// resource.
-	Service *Reference `json:"service,omitempty"`
+	Service *Service `json:"service"`
 }
 
-type Reference struct {
+type Service struct {
 	// API version of the referent.
 	// +optional
-	APIVersion string `json:"apiVersion,omitempty"`
+	APIVersion string `json:"apiVersion"`
 
 	// Kind of the referent.
 	// +optional
-	Kind string `json:"kind,omitempty"`
+	Kind string `json:"kind"`
+
+	// Name of the referent.
+	// Mutually exclusive with Selector.
+	// +optional
+	Name string `json:"name"`
+}
+
+type Application struct {
+	// API version of the referent.
+	// +optional
+	APIVersion string `json:"apiVersion"`
+
+	// Kind of the referent.
+	// +optional
+	Kind string `json:"kind"`
 
 	// Name of the referent.
 	// Mutually exclusive with Selector.
 	// +optional
 	Name string `json:"name,omitempty"`
-}
-
-type Application struct {
-	Reference `json:",inline"`
 
 	// Selector of the referents.
 	// Mutually exclusive with Name.
@@ -73,11 +84,6 @@ type Application struct {
 
 // ServiceBindingStatus defines the observed state of ServiceBinding
 type ServiceBindingStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-}
-
-type Status struct {
 	// ObservedGeneration is the 'Generation' of the Service that
 	// was last processed by the controller.
 	// +optional
@@ -85,9 +91,7 @@ type Status struct {
 
 	// Conditions the latest available observations of a resource's current state.
 	// +optional
-	// +patchMergeKey=type
-	// +patchStrategy=merge
-	Conditions Conditions `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+	Conditions Conditions `json:"conditions,omitempty"`
 }
 
 // ConditionReady specifies that the resource is ready.
@@ -97,10 +101,6 @@ const ConditionReady ConditionType = "Ready"
 type Conditions []Condition
 
 type ConditionType string
-
-type VolatileTime struct {
-	Inner metav1.Time `json:",inline"`
-}
 
 type Condition struct {
 	// Type of condition.
@@ -115,7 +115,8 @@ type Condition struct {
 	// We use VolatileTime in place of metav1.Time to exclude this from creating equality.Semantic
 	// differences (all other things held constant).
 	// +optional
-	LastTransitionTime VolatileTime `json:"lastTransitionTime,omitempty" description:"last time the condition transit from one status to another"`
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty" description:"last time the condition transit from one status to another"`
+	//LastTransitionTime VolatileTime `json:"lastTransitionTime,omitempty" description:"last time the condition transit from one status to another"`
 
 	// The reason for the condition's last transition.
 	// +optional
