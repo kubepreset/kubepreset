@@ -27,8 +27,8 @@ import (
 	sbv1alpha2 "github.com/kubepreset/kubepreset/apis/servicebinding/v1alpha2"
 )
 
-// ServiceBindingReconciler reconciles a ServiceBinding object
-type ServiceBindingReconciler struct {
+// Reconciler reconciles a ServiceBinding object
+type Reconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
@@ -37,7 +37,8 @@ type ServiceBindingReconciler struct {
 // +kubebuilder:rbac:groups=service.binding,resources=servicebindings,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=service.binding,resources=servicebindings/status,verbs=get;update;patch
 
-func (r *ServiceBindingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+// Reconcile based on changes in the ServiceBinding CR or Provisioned Service Secret
+func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	_ = r.Log.WithValues("servicebinding", req.NamespacedName)
 
@@ -46,7 +47,8 @@ func (r *ServiceBindingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 	return ctrl.Result{}, nil
 }
 
-func (r *ServiceBindingReconciler) SetupWithManager(mgr ctrl.Manager) error {
+// SetupWithManager setup controller with manager
+func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&sbv1alpha2.ServiceBinding{}).
 		Complete(r)

@@ -68,7 +68,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&servicebinding.ServiceBindingReconciler{
+	if err = (&servicebinding.Reconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers.servicebinding").WithName("ServiceBinding"),
 		Scheme: mgr.GetScheme(),
