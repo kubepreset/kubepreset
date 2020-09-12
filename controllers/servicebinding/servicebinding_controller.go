@@ -24,7 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	appv1alpha1 "github.com/kubepreset/kubepreset/apis/servicebinding/v1alpha1"
+	sbv1alpha2 "github.com/kubepreset/kubepreset/apis/servicebinding/v1alpha2"
 )
 
 // ServiceBindingReconciler reconciles a ServiceBinding object
@@ -48,6 +48,6 @@ func (r *ServiceBindingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 
 func (r *ServiceBindingReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&appv1alpha1.ServiceBinding{}).
+		For(&sbv1alpha2.ServiceBinding{}).
 		Complete(r)
 }

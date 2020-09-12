@@ -4,5 +4,5 @@ repo: github.com/kubepreset/kubepreset
 resources:
 - group: service.binding
   kind: ServiceBinding
-  version: v1alpha1
+  version: v1alpha2
 version: "2"
