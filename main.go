@@ -28,7 +28,7 @@ import (
 
 	sbv1alpha2 "github.com/kubepreset/kubepreset/apis/servicebinding/v1alpha2"
 	sbpv1alpha2 "github.com/kubepreset/kubepreset/apis/servicebindingprojection/v1alpha2"
-	controllers "github.com/kubepreset/kubepreset/controllers/servicebinding"
+	"github.com/kubepreset/kubepreset/controllers/servicebinding"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -68,9 +68,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.ServiceBindingReconciler{
+	if err = (&servicebinding.ServiceBindingReconciler{
 		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("ServiceBinding"),
+		Log:    ctrl.Log.WithName("controllers.servicebinding").WithName("ServiceBinding"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServiceBinding")
