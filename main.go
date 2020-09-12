@@ -26,8 +26,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	appv1alpha1 "github.com/kubepreset/kubepreset/api/v1alpha1"
-	"github.com/kubepreset/kubepreset/controllers"
+	appv1alpha1 "github.com/kubepreset/kubepreset/apis/servicebinding/v1alpha1"
+	controllers "github.com/kubepreset/kubepreset/controllers/servicebinding"
 	// +kubebuilder:scaffold:imports
 )
 

@@ -1,4 +1,5 @@
 domain: service.binding
+multigroup: true
 repo: github.com/kubepreset/kubepreset
 resources:
 - group: service.binding
