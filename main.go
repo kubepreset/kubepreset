@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	sbv1alpha2 "github.com/kubepreset/kubepreset/apis/servicebinding/v1alpha2"
+	sbpv1alpha2 "github.com/kubepreset/kubepreset/apis/servicebindingprojection/v1alpha2"
 	controllers "github.com/kubepreset/kubepreset/controllers/servicebinding"
 	// +kubebuilder:scaffold:imports
 )
@@ -40,6 +41,7 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 
 	_ = sbv1alpha2.AddToScheme(scheme)
+	_ = sbpv1alpha2.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 

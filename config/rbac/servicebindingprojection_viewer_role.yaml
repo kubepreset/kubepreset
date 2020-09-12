@@ -1,0 +1,20 @@
+# permissions for end users to view servicebindingprojections.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: servicebindingprojection-viewer-role
+rules:
+- apiGroups:
+  - internal.service.binding
+  resources:
+  - servicebindingprojections
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - internal.service.binding
+  resources:
+  - servicebindingprojections/status
+  verbs:
+  - get

@@ -1,0 +1,7 @@
+apiVersion: internal.service.binding/v1alpha2
+kind: ServiceBindingProjection
+metadata:
+  name: servicebindingprojection-sample
+spec:
+  # Add fields here
+  foo: bar

@@ -5,4 +5,7 @@ resources:
 - group: service.binding
   kind: ServiceBinding
   version: v1alpha2
+- group: internal.service.binding
+  kind: ServiceBindingProjection
+  version: v1alpha2
 version: "2"
