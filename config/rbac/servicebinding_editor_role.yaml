@@ -5,7 +5,7 @@ metadata:
   name: servicebinding-editor-role
 rules:
 - apiGroups:
-  - app.kubepreset.dev
+  - service.binding
   resources:
   - servicebindings
   verbs:
@@ -17,7 +17,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - app.kubepreset.dev
+  - service.binding
   resources:
   - servicebindings/status
   verbs:

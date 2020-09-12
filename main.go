@@ -59,7 +59,7 @@ func main() {
 		MetricsBindAddress: metricsAddr,
 		Port:               9443,
 		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   "eebeeb01.kubepreset.dev",
+		LeaderElectionID:   "eebeeb01.service.binding",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

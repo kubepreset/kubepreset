@@ -1,7 +1,7 @@
-domain: kubepreset.dev
+domain: service.binding
 repo: github.com/kubepreset/kubepreset
 resources:
-- group: app
+- group: service.binding
   kind: ServiceBinding
   version: v1alpha1
 version: "2"

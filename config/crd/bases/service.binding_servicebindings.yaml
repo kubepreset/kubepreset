@@ -6,9 +6,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.5
   creationTimestamp: null
-  name: servicebindings.app.kubepreset.dev
+  name: servicebindings.service.binding
 spec:
-  group: app.kubepreset.dev
+  group: service.binding
   names:
     kind: ServiceBinding
     listKind: ServiceBindingList

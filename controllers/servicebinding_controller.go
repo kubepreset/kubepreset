@@ -34,8 +34,8 @@ type ServiceBindingReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=app.kubepreset.dev,resources=servicebindings,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=app.kubepreset.dev,resources=servicebindings/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=service.binding,resources=servicebindings,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=service.binding,resources=servicebindings/status,verbs=get;update;patch
 
 func (r *ServiceBindingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()

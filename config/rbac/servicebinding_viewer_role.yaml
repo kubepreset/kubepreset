@@ -5,7 +5,7 @@ metadata:
   name: servicebinding-viewer-role
 rules:
 - apiGroups:
-  - app.kubepreset.dev
+  - service.binding
   resources:
   - servicebindings
   verbs:
@@ -13,7 +13,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - app.kubepreset.dev
+  - service.binding
   resources:
   - servicebindings/status
   verbs:
