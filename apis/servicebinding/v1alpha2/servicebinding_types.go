@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha2
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -98,8 +97,15 @@ type ServiceBindingStatus struct {
 // For long-running resources.
 const ConditionReady ConditionType = "Ready"
 
+const (
+	ConditionTrue    ConditionStatus = "True"
+	ConditionFalse   ConditionStatus = "False"
+	ConditionUnknown ConditionStatus = "Unknown"
+)
+
 type Conditions []Condition
 
+type ConditionStatus string
 type ConditionType string
 
 type Condition struct {
@@ -109,7 +115,7 @@ type Condition struct {
 
 	// Status of the condition, one of True, False, Unknown.
 	// +required
-	Status corev1.ConditionStatus `json:"status" description:"status of the condition, one of True, False, Unknown"`
+	Status ConditionStatus `json:"status" description:"status of the condition, one of True, False, Unknown"`
 
 	// LastTransitionTime is the last time the condition transitioned from one status to another.
 	// We use VolatileTime in place of metav1.Time to exclude this from creating equality.Semantic
@@ -128,6 +134,7 @@ type Condition struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 
 // ServiceBinding is the Schema for the servicebindings API
 type ServiceBinding struct {
