@@ -4,6 +4,8 @@ go 1.13
 
 require (
 	github.com/go-logr/logr v0.1.0
+	github.com/google/uuid v1.1.2
+	github.com/imdario/mergo v0.3.11
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
 	go.uber.org/zap v1.10.0
