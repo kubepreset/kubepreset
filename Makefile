@@ -14,6 +14,9 @@ endif
 KUBEBUILDER_VERSION ?= "2.3.1"
 export KUBEBUILDER_ASSETS ?= $(CURDIR)/bin
 
+# Other allowed values are DEBUG and INFO
+export LOG_LEVEL ?= TRACE
+
 all: manager
 
 # Run tests

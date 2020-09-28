@@ -20,10 +20,10 @@ interactions with the project.
 Contributions to this project should conform to the [Developer Certificate of
 Origin][dco].  See the [next section](#sign-your-work) for more details.
 
-The [project README in GitHub][readme] has the basic instructions to setup the
-development environment.
+The [Development](#development) section has the basic instructions to setup
+the development environment and running tests.
 
-When you send pull requests:
+Remember, when you send pull requests:
 
 1. Write tests.
 2. Write a [good commit message][commit-message].
@@ -106,6 +106,7 @@ your PR will be rejected by the automated DCO check.
 
 ## Pull Request Workflow
 
+- Fork the repository and clone it your work directory
 - Create a topic branch from where you want to base your work
   - This is usually the `main` branch.
   - Only target release branches if you are certain your fix must be on that
@@ -165,9 +166,39 @@ git push --force-with-lease origin my-bug-fix
 
 Please add a comment in the PR indicating your new changes are ready to review.
 
+## Development
+
+This project requires [Go version 1.14][go] or above installed in your system. 
+
+To build the project:
+
+    make
+
+To run the tests:
+
+    make test
+
+When running tests, to see `INFO` level logging, set this environment variable:
+
+    export LOG_LEVEL=INFO
+    make test
+
+To see `DEBUG` level logging, set the value like this:
+
+    export LOG_LEVEL=DEBUG
+    make test
+
+To see `TRACE` level logging, set the value like this:
+
+    export LOG_LEVEL=TRACE
+    make test
+
+If `LOG_LEVEL` is not set, the default level is going be at `TRACE` level.
+
 [help-wanted]: https://github.com/kubepreset/kubepreset/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22
 [conduct]: https://github.com/kubepreset/kubepreset/blob/main/CODE_OF_CONDUCT.md
 [dco]: http://developercertificate.org
 [group]: https://groups.google.com/g/kubepreset
 [readme]: https://github.com/kubepreset/kubepreset/blob/main/README.md
 [commit-message]: https://chris.beams.io/posts/git-commit/
+[go]: https://golang.org
