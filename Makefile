@@ -11,10 +11,13 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+KUBEBUILDER_VERSION ?= "2.3.1"
+export KUBEBUILDER_ASSETS ?= $(CURDIR)/bin
+
 all: manager
 
 # Run tests
-test: generate fmt vet manifests
+test: bin/kubebuilder generate fmt vet manifests
 	go test ./... -coverprofile cover.out
 
 # Build manager binary
@@ -96,3 +99,10 @@ endif
 # Run golangci-lint
 lint: golangci-lint
 	${GOLANGCI_LINT} run
+
+bin/kubebuilder:
+	mkdir -p $(CURDIR)/bin
+	hack/download-kubebuilder.sh ${KUBEBUILDER_VERSION}
+
+clean:
+	rm -f $(CURDIR)/bin/*
