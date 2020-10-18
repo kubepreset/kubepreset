@@ -20,8 +20,9 @@ interactions with the project.
 Contributions to this project should conform to the [Developer Certificate of
 Origin][dco].  See the [next section](#sign-your-work) for more details.
 
-The [Development](#development) section has the basic instructions to setup
-the development environment and running tests.
+The [Development](#development) section has the basic instructions to setup the
+development environment and running tests.  The [KubePreset Wiki][wiki] has
+additional information for contributors.
 
 Remember, when you send pull requests:
 
@@ -168,7 +169,10 @@ Please add a comment in the PR indicating your new changes are ready to review.
 
 ## Development
 
-This project requires [Go version 1.14][go] or above installed in your system. 
+We recommend using GNU/Linux systems for the development of KubePreset. This
+project requires the [Go version 1.14][go] or above installed in your
+system. You also should have [make][make] and [GCC][gcc] installed in your
+system.
 
 To build the project:
 
@@ -197,8 +201,11 @@ If `LOG_LEVEL` is not set, the default level is going be at `TRACE` level.
 
 [help-wanted]: https://github.com/kubepreset/kubepreset/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22
 [conduct]: https://github.com/kubepreset/kubepreset/blob/main/CODE_OF_CONDUCT.md
+[wiki]: https://github.com/kubepreset/kubepreset/wiki
 [dco]: http://developercertificate.org
 [group]: https://groups.google.com/g/kubepreset
 [readme]: https://github.com/kubepreset/kubepreset/blob/main/README.md
 [commit-message]: https://chris.beams.io/posts/git-commit/
 [go]: https://golang.org
+[make]: https://en.wikipedia.org/wiki/Make_(software)
+[gcc]: https://gcc.gnu.org
