@@ -1,3 +1,6 @@
+# Next KubePreset version.  It should be updated in the main branch and release
+# branches immediately after the tag is published.
+KUBEPRESET_VERSION ?= "0.1.0"
 
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
