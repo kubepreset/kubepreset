@@ -6,7 +6,7 @@
 You can look at the issues [with help wanted label][help-wanted] for items that
 you can work on.
 
-If you need help, please feel free to [reach out in our discussion
+If you need help, please feel free to [reach out to our discussion
 group!][group]
 
 When contributing to this repository, please first discuss the change you wish
@@ -20,8 +20,8 @@ interactions with the project.
 Contributions to this project should conform to the [Developer Certificate of
 Origin][dco].  See the [next section](#sign-your-work) for more details.
 
-The [Development](#development) section has the basic instructions to setup the
-development environment and running tests.  The [KubePreset Wiki][wiki] has
+The [Development](#development) section has the necessary instructions to set up
+the development environment and running tests.  The [KubePreset Wiki][wiki] has
 additional information for contributors.
 
 Remember, when you send pull requests:
