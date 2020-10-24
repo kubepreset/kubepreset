@@ -1,7 +1,8 @@
 # KubePreset: Streamline Application Connectivity with Backing Services
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-![Build](https://github.com/kubepreset/kubepreset/workflows/Build/badge.svg?branch=main)
+[![Release Charts](https://github.com/kubepreset/helm-charts/workflows/Release%20Charts/badge.svg)](https://github.com/kubepreset/helm-charts/actions)
+[![Build](https://github.com/kubepreset/kubepreset/workflows/Build/badge.svg?branch=main)](https://github.com/kubepreset/kubepreset/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubepreset/kubepreset)](https://goreportcard.com/report/github.com/kubepreset/kubepreset)
 [![codecov](https://codecov.io/gh/kubepreset/kubepreset/branch/main/graph/badge.svg)](https://codecov.io/gh/kubepreset/kubepreset)
 [![go.dev Reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/mod/github.com/kubepreset/kubepreset)
