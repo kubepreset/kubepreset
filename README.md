@@ -6,6 +6,7 @@
 [![codecov](https://codecov.io/gh/kubepreset/kubepreset/branch/main/graph/badge.svg)](https://codecov.io/gh/kubepreset/kubepreset)
 [![go.dev Reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/mod/github.com/kubepreset/kubepreset)
 [![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/kubepreset)](https://artifacthub.io/packages/search?repo=kubepreset)
+[![Docker Repository on Quay](https://quay.io/repository/kubepreset/kubepreset/status "Docker Repository on Quay")](https://quay.io/repository/kubepreset/kubepreset)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/kubepreset/kubepreset/blob/main/CONTRIBUTING.md)
 
 KubePreset implements the [Service Binding Specification for Kubernetes][spec].
