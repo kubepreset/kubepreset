@@ -1,4 +1,7 @@
-# KubePreset: Streamline Application Connectivity with Backing Services
+<img src="https://avatars0.githubusercontent.com/u/70762365" align="right" />
+
+# KubePreset
+> Streamline Application Connectivity with Backing Services
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Release Charts](https://github.com/kubepreset/helm-charts/workflows/Release%20Charts/badge.svg)](https://github.com/kubepreset/helm-charts/actions)
