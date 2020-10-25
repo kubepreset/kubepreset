@@ -1,4 +1,7 @@
-# KubePreset: Streamline Application Connectivity with Backing Services
+<img src="https://avatars0.githubusercontent.com/u/70762365" align="right" />
+
+# KubePreset
+> **Streamline Application Connectivity with Backing Services**
 
 KubePreset is a [Kubernetes operator][operator] that aims to streamline
 application connectivity with backing services.  KubePreset implements the
