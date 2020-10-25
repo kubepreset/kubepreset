@@ -116,7 +116,7 @@ var _ = Describe("ServiceBinding Controller:", func() {
 					Namespace: testNamespace,
 				},
 				StringData: map[string]string{
-					"type":     "secret",
+					"type":     "custom",
 					"provider": "backingservice",
 					"username": "guest",
 					"password": "password",
@@ -157,15 +157,14 @@ var _ = Describe("ServiceBinding Controller:", func() {
 					},
 					Template: corev1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      "app",
-							Namespace: testNamespace,
-							Labels:    matchLabels,
+							Labels: matchLabels,
 						},
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{{
 								Name:    "busybox",
 								Image:   "busybox:latest",
-								Command: []string{"sleep", "3600"},
+								Command: []string{"sleep"},
+								Args:    []string{"3600"},
 							}},
 						},
 					},
