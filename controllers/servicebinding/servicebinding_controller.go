@@ -271,7 +271,8 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	conditionFound := false
 	for k, cond := range sb.Status.Conditions {
 		if cond.Type == sbv1alpha2.ConditionReady {
-			sb.Status.Conditions[k] = sbv1alpha2.Condition{Status: "True"}
+			cond.Status = "True"
+			sb.Status.Conditions[k] = cond
 			conditionFound = true
 		}
 	}
@@ -287,7 +288,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	log.V(1).Info("updating the service binding status")
 	if err := r.Status().Update(ctx, &sb); err != nil {
-		log.Error(err, "unable to update the service binding")
+		log.Error(err, "unable to update the service binding", "ServiceBinding", sb)
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{}, nil
