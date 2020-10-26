@@ -24,6 +24,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	sbv1alpha2 "github.com/kubepreset/kubepreset/apis/servicebinding/v1alpha2"
@@ -45,10 +46,25 @@ func init() {
 	// +kubebuilder:scaffold:scheme
 }
 
+// registerHealthChecks creates readiness and liveness probes
+func registerHealthChecks(mgr ctrl.Manager) error {
+	setupLog.Info("creating readiness/health check")
+	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {
+		return err
+	}
+
+	if err := mgr.AddHealthzCheck("ping", healthz.Ping); err != nil {
+		return err
+	}
+	return nil
+}
+
 func main() {
 	var metricsAddr string
+	var healthAddr string
 	var enableLeaderElection bool
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
+	flag.StringVar(&healthAddr, "health-addr", ":8081", "The address the health probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
@@ -57,14 +73,21 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
-		Port:               9443,
-		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   "eebeeb01.service.binding",
+		Scheme:                 scheme,
+		MetricsBindAddress:     metricsAddr,
+		Port:                   9443,
+		LeaderElection:         enableLeaderElection,
+		LeaderElectionID:       "eebeeb01.service.binding",
+		HealthProbeBindAddress: healthAddr,
 	})
+
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
+		os.Exit(1)
+	}
+
+	if err := registerHealthChecks(mgr); err != nil {
+		setupLog.Error(err, "unable to register ready/health checks")
 		os.Exit(1)
 	}
 
