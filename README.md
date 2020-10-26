@@ -48,6 +48,26 @@ To uninstall the chart:
 helm delete my-kubepreset
 ```
 
+## Community
+
+We have a [mailing list (kubepreset@googlegroups.com)][group] for community
+support and discussion.  You are welcome to ask any questions about KubePreset.
+
+To report any issues, use our [primary GitHub issue tracker][tracker].  You can
+make feature requests and report bugs.  For reporting any security issues, see
+the [security policy page][security-policy].
+
+You are welcome to contribute code and documentation to this project. See the
+[contribution guidelines][contribution] for more details.
+
+If you are a backing service creator and want to make your service accessible
+through KubePreset to the application developer, [see our
+documentation][backing-service].
+
+If you are an application developer or a Kubernetes cluster administrator, [read
+the documentation][application-developer] to understand how to connect your
+application to a service using KubePreset.
+
 ---
 This project is maintained by [KubePreset Team (kubepreset@googlegroups.com)][group]
 
@@ -57,3 +77,8 @@ This project is maintained by [KubePreset Team (kubepreset@googlegroups.com)][gr
 [chart]: https://artifacthub.io/packages/helm/kubepreset/kubepreset
 [helm]: https://helm.sh
 [helm-docs]: https://helm.sh/docs/
+[tracker]: https://github.com/kubepreset/kubepreset/issues
+[security-policy]: https://github.com/kubepreset/kubepreset/blob/main/SECURITY.md
+[contribution]: https://github.com/kubepreset/kubepreset/blob/main/CONTRIBUTING.md
+[backing-service]: https://kubepreset.dev
+[application-developer]: https://kubepreset.dev
