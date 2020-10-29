@@ -58,6 +58,34 @@ To uninstall the chart:
 helm delete my-kubepreset
 ```
 
+## Roadmap
+
+### 0.2.0
+
+- [ ] Update `ServiceBinding` resource's `.status.binding.name` with the secret name that is used binding
+- [ ] Always create a [new secret for binding](https://github.com/k8s-service-bindings/spec/issues/101#issuecomment-717679053).
+- [ ] Support `ServiceBinding` resource's `.spec.name` to override `.metadata.name` for directory name
+- [ ] Support `ServiceBinding` resource's `.spec.type` to override value from the `ProvisionedService` secret
+- [ ] Support `ServiceBinding` resource's `.spec.provider` to override value from the `ProvisionedService` secret
+
+### 0.3.0
+
+- [ ] Add support for label selectors for application
+- [ ] Add support for specifying containers to inject (only name-based, and don't support index)
+- [ ] Add support for environment variables
+
+### 0.4.0
+
+- [ ] Add support for Custom Projection extension
+- [ ] Add support for Direct Secret Reference extension
+- [ ] User manual
+- [ ] Demo video
+
+### pre-1.0
+
+- [ ] Add support for mappings
+- [ ] Add support for full spec except "Binding Secret Generation Strategies" extension
+
 ## Community
 
 We have a [mailing list (kubepreset@googlegroups.com)][group] for community
