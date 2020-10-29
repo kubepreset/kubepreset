@@ -260,18 +260,26 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
+	sb.Status.ObservedGeneration = sb.Generation
+
+	var s sbv1alpha2.ConditionStatus = "True"
+
 	log.V(1).Info("updating the application with updated volumes and volumeMounts")
 	if err := r.Update(ctx, application); err != nil {
 		log.Error(err, "unable to update the application")
-		return ctrl.Result{}, err
+		s = "False"
 	}
 
-	sb.Status.ObservedGeneration = sb.Generation
+	return r.setStatus(ctx, log, sb, s)
+}
+
+func (r *Reconciler) setStatus(ctx context.Context, log logr.Logger,
+	sb sbv1alpha2.ServiceBinding, value sbv1alpha2.ConditionStatus) (ctrl.Result, error) {
 
 	conditionFound := false
 	for k, cond := range sb.Status.Conditions {
 		if cond.Type == sbv1alpha2.ConditionReady {
-			cond.Status = "True"
+			cond.Status = value
 			sb.Status.Conditions[k] = cond
 			conditionFound = true
 		}
@@ -281,7 +289,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		c := sbv1alpha2.Condition{
 			LastTransitionTime: metav1.NewTime(time.Now()),
 			Type:               sbv1alpha2.ConditionReady,
-			Status:             "True",
+			Status:             value,
 		}
 		sb.Status.Conditions = append(sb.Status.Conditions, c)
 	}
@@ -291,6 +299,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		log.Error(err, "unable to update the service binding", "ServiceBinding", sb)
 		return ctrl.Result{}, err
 	}
+
 	return ctrl.Result{}, nil
 }
 
