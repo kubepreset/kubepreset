@@ -48,7 +48,6 @@ import (
 
 var cfg *rest.Config
 var k8sClient client.Client
-var k8sClient2 client.Client
 var testEnv *envtest.Environment
 var k8sManager manager.Manager
 
@@ -119,11 +118,6 @@ var _ = BeforeSuite(func(done Done) {
 
 	k8sClient = k8sManager.GetClient()
 	Expect(k8sClient).ToNot(BeNil())
-
-	// FIXME: In some cases previous `k8sClient` seems to be not working
-	k8sClient2, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-	Expect(err).ToNot(HaveOccurred())
-	Expect(k8sClient2).ToNot(BeNil())
 
 	close(done)
 }, 60)

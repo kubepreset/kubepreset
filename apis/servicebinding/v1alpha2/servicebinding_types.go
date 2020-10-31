@@ -17,16 +17,21 @@ limitations under the License.
 package v1alpha2
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+// Important: Run "make" to regenerate code after modifying this file
 
 // ServiceBindingSpec defines the desired state of ServiceBinding
 type ServiceBindingSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+
+	// Name is the name of the service as projected into the application container.  Defaults to .metadata.name.
+	Name string `json:"name,omitempty"`
+	// Type is the type of the service as projected into the application container
+	Type string `json:"type,omitempty"`
+	// Provider is the provider of the service as projected into the application container
+	Provider string `json:"provider,omitempty"`
 
 	// Application resource to inject the binding info.
 	// It could be any process running within a container.
@@ -91,6 +96,9 @@ type ServiceBindingStatus struct {
 	// Conditions the latest available observations of a resource's current state.
 	// +optional
 	Conditions Conditions `json:"conditions,omitempty"`
+
+	// Binding exposes the projected secret for this ServiceBinding
+	Binding *corev1.LocalObjectReference `json:"binding,omitempty"`
 }
 
 // ConditionReady specifies that the resource is ready.

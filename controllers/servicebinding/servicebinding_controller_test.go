@@ -18,10 +18,12 @@ package servicebinding_test
 
 import (
 	"context"
+	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -48,8 +50,7 @@ var _ = Describe("ServiceBinding Controller:", func() {
 			By("Creating BackingService CRD")
 			backingServiceCRD := &apixv1.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "backingservices.app.example.org",
-					Namespace: testNamespace,
+					Name: "backingservices.app.example.org",
 				},
 				Spec: apixv1.CustomResourceDefinitionSpec{
 					Group: "app.example.org",
@@ -88,15 +89,14 @@ var _ = Describe("ServiceBinding Controller:", func() {
 				}}
 			Expect(k8sClient.Create(ctx, backingServiceCRD)).Should(Succeed())
 
-			backingServiceCRDLookupKey := types.NamespacedName{Name: "backingservices.app.example.org", Namespace: testNamespace}
+			backingServiceCRDLookupKey := types.NamespacedName{Name: "backingservices.app.example.org"}
 			createdBackingServiceCRD := &apixv1.CustomResourceDefinition{}
 
 			By("Verifying BackingService CRD")
 			// Retry getting newly created BackingService CRD
 			// Important: This is required as it is going to be used immediately
 			Eventually(func() bool {
-				// FIXME: `k8sClient` seems to be not working
-				err := k8sClient2.Get(ctx, backingServiceCRDLookupKey, createdBackingServiceCRD)
+				err := k8sClient.Get(ctx, backingServiceCRDLookupKey, createdBackingServiceCRD)
 				if err != nil {
 					return false
 				}
@@ -161,10 +161,9 @@ var _ = Describe("ServiceBinding Controller:", func() {
 						},
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{{
-								Name:    "busybox",
-								Image:   "busybox:latest",
-								Command: []string{"sleep"},
-								Args:    []string{"3600"},
+								// Ref. https://github.com/kubepreset/bindingdata
+								Image: "quay.io/kubepreset/bindingdata:latest",
+								Name:  "bindingdata",
 							}},
 						},
 					},
@@ -218,14 +217,71 @@ var _ = Describe("ServiceBinding Controller:", func() {
 			Expect(len(createdServiceBinding.Status.Conditions)).To(Equal(1))
 			// FIXME: Fragile?
 			Expect(createdServiceBinding.Status.ObservedGeneration).To(Equal(int64(1)))
+			Expect(createdServiceBinding.Status.Binding.Name).To(Equal("sb"))
 
 			applicationLookupKey := types.NamespacedName{Name: sb.Spec.Application.Name, Namespace: testNamespace}
 
 			Expect(k8sClient.Get(ctx, applicationLookupKey, app)).Should(Succeed())
 			Expect(len(app.Spec.Template.Spec.Volumes)).To(Equal(1))
-			Expect(app.Spec.Template.Spec.Volumes[0].Name).To(Equal("sb"))
+			Expect(app.Spec.Template.Spec.Volumes[0].Name).To(HavePrefix("sb-"))
+			Expect(app.Spec.Template.Spec.Volumes[0].VolumeSource.Secret.SecretName).To(Equal("sb"))
 			Expect(app.Spec.Template.Spec.Containers[0].Env[0].Value).To(Equal("/bindings"))
+			Expect(app.Spec.Template.Spec.Containers[0].VolumeMounts[0].Name).To(HavePrefix("sb-"))
+			Expect(app.Spec.Template.Spec.Containers[0].VolumeMounts[0].MountPath).To(Equal("/bindings/sb"))
 
+			// FIXME: This seems to be only working an existing cluster
+			if os.Getenv("USE_EXISTING_CLUSTER") != "" {
+				podTimeout := time.Minute * 3
+				podInterval := time.Second * 20
+				podList := &corev1.PodList{}
+				Eventually(func() bool {
+					err := k8sClient.List(ctx, podList, client.InNamespace(testNamespace), client.MatchingLabels{"environment": "test"})
+					if err != nil {
+						return false
+					}
+					if len(podList.Items) > 0 {
+						ready := []bool{}
+						for _, p := range podList.Items {
+							found := false
+							for _, condition := range p.Status.Conditions {
+								if condition.Type == corev1.PodReady &&
+									condition.Status == corev1.ConditionTrue {
+									ready = append(ready, true)
+									found = true
+									break
+								}
+							}
+							if !found {
+								ready = append(ready, false)
+							}
+						}
+						for _, v := range ready {
+							if v == false {
+								return false
+							}
+						}
+						return true
+					}
+					return false
+				}, podTimeout, podInterval).Should(BeTrue())
+
+				podList2 := &corev1.PodList{}
+				Eventually(func() bool {
+					err := k8sClient.List(ctx, podList2, client.InNamespace(testNamespace), client.MatchingLabels{"environment": "test"})
+					return err == nil
+				}, podTimeout, podInterval).Should(BeTrue())
+
+				Expect(podList2.Items[0].Spec.Containers[0].Env).Should(ContainElement(corev1.EnvVar{Name: "SERVICE_BINDING_ROOT", Value: "/bindings"}))
+				found := false
+				for _, vm := range podList2.Items[0].Spec.Containers[0].VolumeMounts {
+					if vm.MountPath == "/bindings/sb" {
+						found = true
+						Expect(vm.Name).To(HavePrefix("sb-"))
+						Expect(vm.ReadOnly).To(Equal(true))
+					}
+				}
+				Expect(found).To(Equal(true))
+			}
 		})
 	})
 })
