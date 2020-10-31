@@ -100,6 +100,14 @@ spec:
                       type: object
                   type: object
               type: object
+            name:
+              description: Name is the name of the service as projected into the application
+                container.  Defaults to .metadata.name.
+              type: string
+            provider:
+              description: Provider is the provider of the service as projected into
+                the application container
+              type: string
             service:
               description: 'Service referencing the binding secret From the spec:
                 A Service Binding resource **MUST** define a `.spec.service` which
@@ -116,6 +124,10 @@ spec:
                   description: Name of the referent. Mutually exclusive with Selector.
                   type: string
               type: object
+            type:
+              description: Type is the type of the service as projected into the application
+                container
+              type: string
           required:
           - application
           - service
@@ -123,6 +135,14 @@ spec:
         status:
           description: ServiceBindingStatus defines the observed state of ServiceBinding
           properties:
+            binding:
+              description: Binding exposes the projected secret for this ServiceBinding
+              properties:
+                name:
+                  description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    TODO: Add other useful fields. apiVersion, kind, uid?'
+                  type: string
+              type: object
             conditions:
               description: Conditions the latest available observations of a resource's
                 current state.

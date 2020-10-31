@@ -18,6 +18,8 @@ package servicebinding
 
 import (
 	"context"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -82,11 +84,10 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 	log.V(2).Info("ServiceBinding object retrieved", "name", sb.Name, "annotations", sb.Annotations, "labels", sb.Labels)
-	/*
-		if sb.Status.ObservedGeneration == sb.Generation {
-			return ctrl.Result{}, nil
-		}
-	*/
+
+	if sb.Status.ObservedGeneration == sb.Generation {
+		return ctrl.Result{}, nil
+	}
 
 	backingServiceCRLookupKey := client.ObjectKey{Name: sb.Spec.Service.Name, Namespace: req.NamespacedName.Namespace}
 
@@ -116,14 +117,20 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	log.V(2).Info("completed mapping backing service with the provisioned service", "provisioned-service", ps)
 
 	secretLookupKey := client.ObjectKey{Name: ps.Status.Binding.Name, Namespace: req.NamespacedName.Namespace}
-	secret := &corev1.Secret{}
+	psSecret := &corev1.Secret{}
 
 	log.V(1).Info("retrieving the secret object")
-	if err := r.Get(ctx, secretLookupKey, secret); err != nil {
+	if err := r.Get(ctx, secretLookupKey, psSecret); err != nil {
 		log.Error(err, "unable to fetch backing service")
 		return ctrl.Result{}, err
 	}
-	log.V(2).Info("the secret object retrieved", "secret-data", secret.Data)
+	log.V(2).Info("the secret object retrieved", "secret-data", psSecret.Data)
+
+	secret, err := r.createSecretForBinding(ctx, log, sb, psSecret)
+	if err != nil {
+		log.Error(err, "unable to create Secret resource")
+		return ctrl.Result{}, err
+	}
 
 	applicationLookupKey := client.ObjectKey{Name: sb.Spec.Application.Name, Namespace: req.NamespacedName.Namespace}
 
@@ -144,11 +151,20 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	log.V(2).Info("application object retrieved", "metadata", application.Object["metadata"])
 
+	volumeNamePrefix := sb.Name
+	if len(volumeNamePrefix) > 56 {
+		volumeNamePrefix = volumeNamePrefix[:56]
+	}
+	volumeName := volumeNamePrefix + "-" + secret.GetResourceVersion()
+	mountPathDir := sb.Name
+	if sb.Spec.Name != "" {
+		mountPathDir = sb.Spec.Name
+	}
 	volumeProjection := &corev1.Volume{
-		Name: sb.Name, // FIXME: What should be the name?
+		Name: volumeName,
 		VolumeSource: corev1.VolumeSource{
 			Secret: &corev1.SecretVolumeSource{
-				SecretName: ps.Status.Binding.Name,
+				SecretName: secret.Name,
 			},
 		},
 	}
@@ -175,7 +191,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	for i, volume := range volumes {
 		log.V(2).Info("Volume", "volume", volume)
-		if sb.Name == volume.(map[string]interface{})["name"] {
+		if strings.HasPrefix(volume.(map[string]interface{})["name"].(string), volumeNamePrefix) {
 			volumes[i] = unstructuredVolume
 			volumeFound = true
 		}
@@ -214,28 +230,28 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		mountPath := ""
 		for _, e := range c.Env {
 			if e.Name == ServiceBindingRoot {
-				mountPath = e.Value
+				mountPath = path.Join(e.Value, mountPathDir)
 				break
 			}
 		}
 
 		if mountPath == "" {
-			mountPath = "/bindings"
+			mountPath = path.Join("/bindings", mountPathDir)
 			c.Env = append(c.Env, corev1.EnvVar{
 				Name:  ServiceBindingRoot,
-				Value: mountPath,
+				Value: "/bindings",
 			})
 		}
 
 		volumeMount := corev1.VolumeMount{
-			Name:      sb.Name,
+			Name:      volumeName,
 			MountPath: mountPath,
 			ReadOnly:  true,
 		}
 
 		volumeMountFound := false
 		for j, vm := range c.VolumeMounts {
-			if vm.Name == sb.Name {
+			if strings.HasPrefix(vm.Name, volumeNamePrefix) {
 				c.VolumeMounts[j] = volumeMount
 				volumeMountFound = true
 				break
@@ -276,6 +292,8 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 func (r *Reconciler) setStatus(ctx context.Context, log logr.Logger,
 	sb sbv1alpha2.ServiceBinding, value sbv1alpha2.ConditionStatus) (ctrl.Result, error) {
 
+	sb.Status.Binding = &corev1.LocalObjectReference{Name: sb.Name}
+
 	conditionFound := false
 	for k, cond := range sb.Status.Conditions {
 		if cond.Type == sbv1alpha2.ConditionReady {
@@ -301,6 +319,41 @@ func (r *Reconciler) setStatus(ctx context.Context, log logr.Logger,
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *Reconciler) createSecretForBinding(ctx context.Context, log logr.Logger,
+	sb sbv1alpha2.ServiceBinding, sec *corev1.Secret) (*corev1.Secret, error) {
+	newSecret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: sb.Name}}
+	newSecret.Namespace = sb.Namespace
+	secCopy := sec.DeepCopy()
+	newSecret.Data = secCopy.Data
+	l := sb.DeepCopy().GetLabels()
+	if l == nil {
+		l = make(map[string]string)
+	}
+	l["service.binding/name"] = sb.Name
+	newSecret.Labels = l
+	newSecret.Type = corev1.SecretType("service.binding/" + sb.Spec.Type)
+	if val, ok := secCopy.Data["type"]; ok {
+		newSecret.Data["type"] = val
+	}
+	if sb.Spec.Type != "" {
+		newSecret.Data["type"] = []byte(sb.Spec.Type)
+	}
+	if val, ok := secCopy.Data["provider"]; ok {
+		newSecret.Data["provider"] = val
+	}
+	if sb.Spec.Provider != "" {
+		newSecret.Data["provider"] = []byte(sb.Spec.Provider)
+	}
+	gvk := sbv1alpha2.GroupVersion.WithKind("ServiceBinding")
+	newSecret.OwnerReferences = []metav1.OwnerReference{*metav1.NewControllerRef(sb.GetObjectMeta(), gvk)}
+	log.V(1).Info("Creating Secret resource for binding")
+	if err := r.Create(ctx, newSecret); err != nil {
+		log.Error(err, "unable to create Secret resource", "secret", newSecret)
+		return nil, err
+	}
+	return newSecret, nil
 }
 
 // SetupWithManager setup controller with manager
