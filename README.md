@@ -86,6 +86,52 @@ helm delete my-kubepreset
 - [ ] Add support for mappings
 - [ ] Add support for full spec except "Binding Secret Generation Strategies" extension
 
+## Contributing to KubePreset
+
+:+1::tada: First off, thanks for taking the time to contribute!
+:tada::+1:
+
+You can look at the issues [with help wanted label][help-wanted] for items that
+you can work on.
+
+If you need help, please feel free to [reach out to our discussion
+group!][group]
+
+When contributing to this repository, please first discuss the change you wish
+to make via issue, email, or any other method with the owners of this repository
+before making a change.  Small pull requests are easy to review and merge.  So,
+please send small pull requests.
+
+Please note we have a [code of conduct][conduct], please follow it in all your
+interactions with the project.
+
+Contributions to this project should conform to the [Developer Certificate of
+Origin][dco].
+
+Remember, when you send pull requests:
+
+1. Write tests.
+2. Write a [good commit message][commit-message].
+
+See the [contribution guidelines][contribution] for more details.  The [KubePreset Wiki][wiki]
+has additional information for contributors.
+
+### Development
+
+We recommend using GNU/Linux systems for the development of KubePreset. This
+project requires the [Go version 1.14][go] or above installed in your
+system. You also should have [make][make] and [GCC][gcc] installed in your
+system.
+
+To build the project:
+
+    make
+
+To run the tests:
+
+    make test
+
+
 ## Community
 
 We have a [mailing list (kubepreset@googlegroups.com)][group] for community
@@ -120,3 +166,11 @@ This project is maintained by [KubePreset Team (kubepreset@googlegroups.com)][gr
 [contribution]: https://github.com/kubepreset/kubepreset/blob/main/CONTRIBUTING.md
 [backing-service]: https://kubepreset.dev
 [application-developer]: https://kubepreset.dev
+[help-wanted]: https://github.com/kubepreset/kubepreset/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22
+[conduct]: https://github.com/kubepreset/kubepreset/blob/main/CODE_OF_CONDUCT.md
+[dco]: http://developercertificate.org
+[commit-message]: https://chris.beams.io/posts/git-commit/
+[wiki]: https://github.com/kubepreset/kubepreset/wiki
+[go]: https://golang.org
+[make]: https://en.wikipedia.org/wiki/Make_(software)
+[gcc]: https://gcc.gnu.org
