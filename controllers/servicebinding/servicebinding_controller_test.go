@@ -191,6 +191,10 @@ var _ = Describe("ServiceBinding Controller:", func() {
 						Kind:       "BackingService",
 						Name:       "back1",
 					},
+					Env: []sbv1alpha2.Environment{
+						{Name: "BACKING_SERVICE_USERNAME", Key: "username"},
+						{Name: "BACKING_SERVICE_PASSWORD", Key: "password"},
+					},
 				},
 			}
 			Expect(k8sClient.Create(ctx, sb)).Should(Succeed())
@@ -225,7 +229,9 @@ var _ = Describe("ServiceBinding Controller:", func() {
 			Expect(len(app.Spec.Template.Spec.Volumes)).To(Equal(1))
 			Expect(app.Spec.Template.Spec.Volumes[0].Name).To(HavePrefix("sb-"))
 			Expect(app.Spec.Template.Spec.Volumes[0].VolumeSource.Secret.SecretName).To(Equal("sb"))
-			Expect(app.Spec.Template.Spec.Containers[0].Env[0].Value).To(Equal("/bindings"))
+			Expect(app.Spec.Template.Spec.Containers[0].Env).Should(ContainElement(corev1.EnvVar{Name: "BACKING_SERVICE_USERNAME", Value: "guest"}))
+			Expect(app.Spec.Template.Spec.Containers[0].Env).Should(ContainElement(corev1.EnvVar{Name: "BACKING_SERVICE_PASSWORD", Value: "password"}))
+			Expect(app.Spec.Template.Spec.Containers[0].Env).Should(ContainElement(corev1.EnvVar{Name: "SERVICE_BINDING_ROOT", Value: "/bindings"}))
 			Expect(app.Spec.Template.Spec.Containers[0].VolumeMounts[0].Name).To(HavePrefix("sb-"))
 			Expect(app.Spec.Template.Spec.Containers[0].VolumeMounts[0].MountPath).To(Equal("/bindings/sb"))
 

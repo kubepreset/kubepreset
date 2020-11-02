@@ -227,6 +227,13 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{}, err
 		}
 
+		for _, e := range sb.Spec.Env {
+			c.Env = append(c.Env, corev1.EnvVar{
+				Name:  e.Name,
+				Value: string(secret.Data[e.Key]),
+			})
+
+		}
 		mountPath := ""
 		for _, e := range c.Env {
 			if e.Name == ServiceBindingRoot {

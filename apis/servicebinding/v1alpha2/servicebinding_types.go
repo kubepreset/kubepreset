@@ -49,6 +49,9 @@ type ServiceBindingSpec struct {
 	// an `ObjectReference`-like declaration to a Provisioned Service-able
 	// resource.
 	Service *Service `json:"service"`
+
+	// Env creates environment variables based on the Secret values
+	Env []Environment `json:"env,omitempty"`
 }
 
 type Service struct {
@@ -99,6 +102,15 @@ type ServiceBindingStatus struct {
 
 	// Binding exposes the projected secret for this ServiceBinding
 	Binding *corev1.LocalObjectReference `json:"binding,omitempty"`
+}
+
+// Environment represents a key to Secret data keys and name of the environment variable
+type Environment struct {
+	// Name of the environment variable
+	Name string `json:"name"`
+
+	// Secret data key
+	Key string `json:"key"`
 }
 
 // ConditionReady specifies that the resource is ready.
