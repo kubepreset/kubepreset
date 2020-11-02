@@ -1,7 +1,7 @@
 # Next KubePreset version.  It should be updated in the main branch and release
 # branches immediately after the tag is published.
 # Refer https://github.com/kubepreset/kubepreset/wiki/Release-Process
-KUBEPRESET_VERSION ?= "0.2.0"
+KUBEPRESET_VERSION ?= "0.3.0"
 
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
