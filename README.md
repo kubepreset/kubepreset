@@ -60,14 +60,6 @@ helm delete my-kubepreset
 
 ## Roadmap
 
-### 0.2.0
-
-- [ ] Update `ServiceBinding` resource's `.status.binding.name` with the secret name that is used binding
-- [ ] Always create a [new secret for binding](https://github.com/k8s-service-bindings/spec/issues/101#issuecomment-717679053).
-- [ ] Support `ServiceBinding` resource's `.spec.name` to override `.metadata.name` for directory name
-- [ ] Support `ServiceBinding` resource's `.spec.type` to override value from the `ProvisionedService` secret
-- [ ] Support `ServiceBinding` resource's `.spec.provider` to override value from the `ProvisionedService` secret
-
 ### 0.3.0
 
 - [ ] Add support for label selectors for application
