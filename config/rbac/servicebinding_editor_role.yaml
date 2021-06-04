@@ -5,7 +5,7 @@ metadata:
   name: servicebinding-editor-role
 rules:
 - apiGroups:
-  - service.binding
+  - binding.x-k8s.io
   resources:
   - servicebindings
   verbs:
@@ -17,7 +17,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - service.binding
+  - binding.x-k8s.io
   resources:
   - servicebindings/status
   verbs:

@@ -1,0 +1,7 @@
+apiVersion: binding.x-k8s.io/v1beta1
+kind: ServiceBinding
+metadata:
+  name: servicebinding-sample
+spec:
+  # Add fields here
+  foo: bar

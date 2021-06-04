@@ -1,0 +1,51 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+  name: kubepreset.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: ServiceBinding is the Schema for the servicebindings API
+      displayName: Service Binding
+      kind: ServiceBinding
+      name: servicebindings.binding.x-k8s.io
+      version: v1beta1
+  description: Streamline Application Connectivity with Backing Services
+  displayName: KubePreset
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - operator
+  - binding
+  - service
+  - application
+  links:
+  - name: Kubepreset
+    url: https://kubepreset.domain
+  maintainers:
+  - email: baiju.m.mail@gmail.com
+    name: Baiju Muthukadan
+  maturity: alpha
+  provider:
+    name: Baiju Muthukadan
+    url: https://kubepreset.dev
+  version: 0.0.0

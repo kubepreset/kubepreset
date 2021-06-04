@@ -1,11 +1,20 @@
-domain: service.binding
+domain: x-k8s.io
+layout:
+- go.kubebuilder.io/v3
 multigroup: true
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: kubepreset
 repo: github.com/kubepreset/kubepreset
 resources:
-- group: service.binding
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: x-k8s.io
+  group: binding
   kind: ServiceBinding
-  version: v1alpha2
-- group: internal.service.binding
-  kind: ServiceBindingProjection
-  version: v1alpha2
-version: "2"
+  path: github.com/kubepreset/kubepreset/apis/binding/v1beta1
+  version: v1beta1
+version: "3"
