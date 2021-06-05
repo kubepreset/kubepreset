@@ -31,7 +31,7 @@ From the [spec][spec] introduction:
 
 ## Installation
 
-This project is in the **Alpha** stage right now.  The recommended approach for installation is through [Helm charts][chart]
+This project is in the **Beta** stage right now.  The recommended approach for installation is through [Helm charts][chart]
 
 [Helm][helm] must be installed to use the charts.  Please refer to Helm's
 [documentation][helm-docs] to get started.
@@ -65,17 +65,16 @@ helm delete my-kubepreset
 - [ ] Add support for label selectors for application
 - [ ] Add support for specifying containers to inject (only name-based, and don't support index)
 - [ ] Add support for environment variables
+- [ ] Add support for Direct Secret Reference
 
 ### 0.4.0
 
-- [ ] Add support for Custom Projection extension
-- [ ] Add support for Direct Secret Reference extension
+- [ ] Add support for Application Resource Mapping
 - [ ] User manual
 - [ ] Demo video
 
-### pre-1.0
+### 1.0.0
 
-- [ ] Add support for mappings
 - [ ] Add support for full spec except "Binding Secret Generation Strategies" extension
 
 ## Contributing to KubePreset

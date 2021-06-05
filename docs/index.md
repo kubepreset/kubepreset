@@ -21,7 +21,7 @@ From the [spec][spec] introduction:
 
 ## Installation
 
-This project is in the **Alpha** stage right now.  The recommended approach for installation is through [Helm charts][chart]
+This project is in the **Beta** stage right now.  The recommended approach for installation is through [Helm charts][chart]
 
 [Helm][helm] must be installed to use the charts.  Please refer to Helm's
 [documentation][helm-docs] to get started.
