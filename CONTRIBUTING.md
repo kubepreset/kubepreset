@@ -170,7 +170,7 @@ Please add a comment in the PR indicating your new changes are ready to review.
 ## Development
 
 We recommend using GNU/Linux systems for the development of KubePreset. This
-project requires the [Go version 1.14][go] or above installed in your
+project requires the [Go version 1.16][go] or above installed in your
 system. You also should have [make][make] and [GCC][gcc] installed in your
 system.
 
