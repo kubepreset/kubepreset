@@ -33,9 +33,13 @@ jobs:
         uses: helm/kind-action@v1.1.0
 
       - name: Run tests
+        env:
+          LOG_LEVEL: TRACE
         run: make test
 
       - name: Run tests again to ensure cleanup
+        env:
+          LOG_LEVEL: TRACE
         run: make test
 
       - name: Report coverage

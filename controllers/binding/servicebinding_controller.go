@@ -125,12 +125,6 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 	log.V(2).Info("the secret object retrieved", "secret-data", psSecret.Data)
 
-	secret, err := r.createSecretForBinding(ctx, log, sb, psSecret)
-	if err != nil {
-		log.Error(err, "unable to create Secret resource")
-		return ctrl.Result{}, err
-	}
-
 	applicationLookupKey := client.ObjectKey{Name: sb.Spec.Application.Name, Namespace: req.NamespacedName.Namespace}
 
 	application := &unstructured.Unstructured{
@@ -150,20 +144,46 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 	log.V(2).Info("application object retrieved", "metadata", application.Object["metadata"])
 
+	cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: sb.Name}}
+	cm.Namespace = sb.Namespace
+	cm.Labels = sb.DeepCopy().GetLabels()
+	cm.Data = map[string]string{}
+	if sb.Spec.Type != "" {
+		cm.Data["type"] = sb.Spec.Type
+	}
+	if sb.Spec.Provider != "" {
+		cm.Data["provider"] = sb.Spec.Provider
+	}
+
+	cm.OwnerReferences = []metav1.OwnerReference{*metav1.NewControllerRef(sb.GetObjectMeta(), sb.GroupVersionKind())}
+	log.V(1).Info("Creating ConfigMap resource for binding")
+	if err := r.Create(ctx, cm); err != nil {
+		log.Error(err, "unable to create ConfigMap resource", "cm", cm)
+		return ctrl.Result{}, err
+	}
+
 	volumeNamePrefix := sb.Name
 	if len(volumeNamePrefix) > 56 {
 		volumeNamePrefix = volumeNamePrefix[:56]
 	}
-	volumeName := volumeNamePrefix + "-" + secret.GetResourceVersion()
+	volumeName := volumeNamePrefix + "-" + psSecret.GetResourceVersion()
 	mountPathDir := sb.Name
 	if sb.Spec.Name != "" {
 		mountPathDir = sb.Spec.Name
 	}
+	sp := &corev1.SecretProjection{
+		LocalObjectReference: corev1.LocalObjectReference{
+			Name: psSecret.Name,
+		}}
+	cmp := &corev1.ConfigMapProjection{
+		LocalObjectReference: corev1.LocalObjectReference{
+			Name: cm.Name,
+		}}
 	volumeProjection := &corev1.Volume{
 		Name: volumeName,
 		VolumeSource: corev1.VolumeSource{
-			Secret: &corev1.SecretVolumeSource{
-				SecretName: secret.Name,
+			Projected: &corev1.ProjectedVolumeSource{
+				Sources: []corev1.VolumeProjection{{Secret: sp}, {ConfigMap: cmp}},
 			},
 		},
 	}
@@ -229,7 +249,7 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		for _, e := range sb.Spec.Env {
 			c.Env = append(c.Env, corev1.EnvVar{
 				Name:  e.Name,
-				Value: string(secret.Data[e.Key]),
+				Value: string(psSecret.Data[e.Key]),
 			})
 
 		}
@@ -288,7 +308,7 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	log.V(1).Info("updating the application with updated volumes and volumeMounts")
 	if err := r.Update(ctx, application); err != nil {
-		log.Error(err, "unable to update the application")
+		log.Error(err, "unable to update the application", "application", application)
 		s = "False"
 	}
 
@@ -325,41 +345,6 @@ func (r *ServiceBindingReconciler) setStatus(ctx context.Context, log logr.Logge
 	}
 
 	return ctrl.Result{}, nil
-}
-
-func (r *ServiceBindingReconciler) createSecretForBinding(ctx context.Context, log logr.Logger,
-	sb bindingv1beta1.ServiceBinding, sec *corev1.Secret) (*corev1.Secret, error) {
-	newSecret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: sb.Name}}
-	newSecret.Namespace = sb.Namespace
-	secCopy := sec.DeepCopy()
-	newSecret.Data = secCopy.Data
-	l := sb.DeepCopy().GetLabels()
-	if l == nil {
-		l = make(map[string]string)
-	}
-	l["service.binding/name"] = sb.Name
-	newSecret.Labels = l
-	newSecret.Type = corev1.SecretType("service.binding/" + sb.Spec.Type)
-	if val, ok := secCopy.Data["type"]; ok {
-		newSecret.Data["type"] = val
-	}
-	if sb.Spec.Type != "" {
-		newSecret.Data["type"] = []byte(sb.Spec.Type)
-	}
-	if val, ok := secCopy.Data["provider"]; ok {
-		newSecret.Data["provider"] = val
-	}
-	if sb.Spec.Provider != "" {
-		newSecret.Data["provider"] = []byte(sb.Spec.Provider)
-	}
-	gvk := bindingv1beta1.GroupVersion.WithKind("ServiceBinding")
-	newSecret.OwnerReferences = []metav1.OwnerReference{*metav1.NewControllerRef(sb.GetObjectMeta(), gvk)}
-	log.V(1).Info("Creating Secret resource for binding")
-	if err := r.Create(ctx, newSecret); err != nil {
-		log.Error(err, "unable to create Secret resource", "secret", newSecret)
-		return nil, err
-	}
-	return newSecret, nil
 }
 
 // SetupWithManager setup controller with manager
