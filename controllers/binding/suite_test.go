@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -44,6 +45,8 @@ import (
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
+
+const timeout = time.Minute * 2
 
 var cfg *rest.Config
 var k8sClient client.Client
@@ -74,7 +77,7 @@ func TestAPIs(t *testing.T) {
 	RunSpecs(t, "Controller Suite")
 }
 
-var _ = BeforeSuite(func(done Done) {
+var _ = BeforeSuite(func() {
 	level := uzap.NewAtomicLevelAt(logLevel)
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true), zap.Level(&level)))
 
@@ -115,10 +118,14 @@ var _ = BeforeSuite(func(done Done) {
 		Expect(err).ToNot(HaveOccurred())
 	}()
 
-	k8sClient = k8sManager.GetClient()
-	Expect(k8sClient).ToNot(BeNil())
+	done := make(chan interface{})
+	go func() {
+		k8sClient = k8sManager.GetClient()
+		Expect(k8sClient).ToNot(BeNil())
+		close(done) //signifies the code is done
+	}()
+	Eventually(done, timeout).Should(BeClosed())
 
-	close(done)
 }, 60)
 
 var _ = AfterSuite(func() {

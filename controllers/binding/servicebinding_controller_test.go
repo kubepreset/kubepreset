@@ -54,7 +54,7 @@ var _ = Describe("ServiceBinding Controller:", func() {
 		AfterEach(func() {
 			ctx := context.Background()
 			matchLabels := map[string]string{
-				"environment": "test",
+				"environment": "test1",
 			}
 
 			app := &appsv1.Deployment{
@@ -148,7 +148,7 @@ var _ = Describe("ServiceBinding Controller:", func() {
 
 			podList := &corev1.PodList{}
 			Eventually(func() bool {
-				err := k8sClient.List(ctx, podList, client.InNamespace(testNamespace), client.MatchingLabels{"environment": "test"})
+				err := k8sClient.List(ctx, podList, client.InNamespace(testNamespace), client.MatchingLabels{"environment": "test1"})
 				if err != nil {
 					return false
 				}
@@ -257,7 +257,7 @@ var _ = Describe("ServiceBinding Controller:", func() {
 			Expect(k8sClient.Create(ctx, backingServiceCR)).Should(Succeed())
 
 			matchLabels := map[string]string{
-				"environment": "test",
+				"environment": "test1",
 			}
 
 			app := &appsv1.Deployment{
@@ -284,6 +284,38 @@ var _ = Describe("ServiceBinding Controller:", func() {
 				},
 			}
 			Expect(k8sClient.Create(ctx, app)).Should(Succeed())
+
+			podList := &corev1.PodList{}
+			Eventually(func() bool {
+				err := k8sClient.List(ctx, podList, client.InNamespace(testNamespace), client.MatchingLabels{"environment": "test1"})
+				if err != nil {
+					return false
+				}
+				if len(podList.Items) > 0 {
+					ready := []bool{}
+					for _, p := range podList.Items {
+						found := false
+						for _, condition := range p.Status.Conditions {
+							if condition.Type == corev1.PodReady &&
+								condition.Status == corev1.ConditionTrue {
+								ready = append(ready, true)
+								found = true
+								break
+							}
+						}
+						if !found {
+							ready = append(ready, false)
+						}
+					}
+					for _, v := range ready {
+						if v == false {
+							return false
+						}
+					}
+					return true
+				}
+				return false
+			}, podTimeout, podInterval).Should(BeTrue())
 
 			sb := &bindingv1beta1.ServiceBinding{
 				TypeMeta: metav1.TypeMeta{
@@ -347,9 +379,9 @@ var _ = Describe("ServiceBinding Controller:", func() {
 			Expect(app.Spec.Template.Spec.Containers[0].VolumeMounts[0].Name).To(HavePrefix("sb1-"))
 			Expect(app.Spec.Template.Spec.Containers[0].VolumeMounts[0].MountPath).To(Equal("/bindings/sb1"))
 
-			podList := &corev1.PodList{}
+			podList = &corev1.PodList{}
 			Eventually(func() bool {
-				err := k8sClient.List(ctx, podList, client.InNamespace(testNamespace), client.MatchingLabels{"environment": "test"})
+				err := k8sClient.List(ctx, podList, client.InNamespace(testNamespace), client.MatchingLabels{"environment": "test1"})
 				if err != nil {
 					return false
 				}
@@ -381,7 +413,7 @@ var _ = Describe("ServiceBinding Controller:", func() {
 
 			podList2 := &corev1.PodList{}
 			Eventually(func() bool {
-				err := k8sClient.List(ctx, podList2, client.InNamespace(testNamespace), client.MatchingLabels{"environment": "test"})
+				err := k8sClient.List(ctx, podList2, client.InNamespace(testNamespace), client.MatchingLabels{"environment": "test1"})
 				return err == nil
 			}, podTimeout, podInterval).Should(BeTrue())
 
@@ -403,7 +435,7 @@ var _ = Describe("ServiceBinding Controller:", func() {
 		AfterEach(func() {
 			ctx := context.Background()
 			matchLabels := map[string]string{
-				"environment": "test",
+				"environment": "test2",
 			}
 
 			app := &appsv1.Deployment{
@@ -497,7 +529,7 @@ var _ = Describe("ServiceBinding Controller:", func() {
 
 			podList := &corev1.PodList{}
 			Eventually(func() bool {
-				err := k8sClient.List(ctx, podList, client.InNamespace(testNamespace), client.MatchingLabels{"environment": "test"})
+				err := k8sClient.List(ctx, podList, client.InNamespace(testNamespace), client.MatchingLabels{"environment": "test2"})
 				if err != nil {
 					return false
 				}
@@ -606,7 +638,7 @@ var _ = Describe("ServiceBinding Controller:", func() {
 			Expect(k8sClient.Create(ctx, backingServiceCR)).Should(Succeed())
 
 			matchLabels := map[string]string{
-				"environment": "test",
+				"environment": "test2",
 			}
 
 			app := &appsv1.Deployment{
@@ -633,6 +665,38 @@ var _ = Describe("ServiceBinding Controller:", func() {
 				},
 			}
 			Expect(k8sClient.Create(ctx, app)).Should(Succeed())
+
+			podList := &corev1.PodList{}
+			Eventually(func() bool {
+				err := k8sClient.List(ctx, podList, client.InNamespace(testNamespace), client.MatchingLabels{"environment": "test2"})
+				if err != nil {
+					return false
+				}
+				if len(podList.Items) > 0 {
+					ready := []bool{}
+					for _, p := range podList.Items {
+						found := false
+						for _, condition := range p.Status.Conditions {
+							if condition.Type == corev1.PodReady &&
+								condition.Status == corev1.ConditionTrue {
+								ready = append(ready, true)
+								found = true
+								break
+							}
+						}
+						if !found {
+							ready = append(ready, false)
+						}
+					}
+					for _, v := range ready {
+						if v == false {
+							return false
+						}
+					}
+					return true
+				}
+				return false
+			}, podTimeout, podInterval).Should(BeTrue())
 
 			sb := &bindingv1beta1.ServiceBinding{
 				TypeMeta: metav1.TypeMeta{
@@ -698,9 +762,9 @@ var _ = Describe("ServiceBinding Controller:", func() {
 			Expect(app.Spec.Template.Spec.Containers[0].VolumeMounts[0].Name).To(HavePrefix("sb2-"))
 			Expect(app.Spec.Template.Spec.Containers[0].VolumeMounts[0].MountPath).To(Equal("/bindings/sb2"))
 
-			podList := &corev1.PodList{}
+			podList = &corev1.PodList{}
 			Eventually(func() bool {
-				err := k8sClient.List(ctx, podList, client.InNamespace(testNamespace), client.MatchingLabels{"environment": "test"})
+				err := k8sClient.List(ctx, podList, client.InNamespace(testNamespace), client.MatchingLabels{"environment": "test2"})
 				if err != nil {
 					return false
 				}
@@ -732,7 +796,7 @@ var _ = Describe("ServiceBinding Controller:", func() {
 
 			podList2 := &corev1.PodList{}
 			Eventually(func() bool {
-				err := k8sClient.List(ctx, podList2, client.InNamespace(testNamespace), client.MatchingLabels{"environment": "test"})
+				err := k8sClient.List(ctx, podList2, client.InNamespace(testNamespace), client.MatchingLabels{"environment": "test2"})
 				return err == nil
 			}, podTimeout, podInterval).Should(BeTrue())
 
