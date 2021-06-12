@@ -85,35 +85,40 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 	log.V(2).Info("ServiceBinding object retrieved", "ServiceBinding", sb)
 
-	backingServiceCRLookupKey := client.ObjectKey{Name: sb.Spec.Service.Name, Namespace: req.NamespacedName.Namespace}
+	var secretLookupKey client.ObjectKey
+	if sb.Spec.Service.Kind == "Secret" && sb.Spec.Service.APIVersion == "v1" {
+		secretLookupKey = client.ObjectKey{Name: sb.Spec.Service.Name, Namespace: req.NamespacedName.Namespace}
+	} else {
+		backingServiceCRLookupKey := client.ObjectKey{Name: sb.Spec.Service.Name, Namespace: req.NamespacedName.Namespace}
 
-	backingServiceCR := &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"kind":       sb.Spec.Service.Kind,
-			"apiVersion": sb.Spec.Service.APIVersion,
-			"metadata": map[string]interface{}{
-				"name": sb.Spec.Service.Name,
+		backingServiceCR := &unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"kind":       sb.Spec.Service.Kind,
+				"apiVersion": sb.Spec.Service.APIVersion,
+				"metadata": map[string]interface{}{
+					"name": sb.Spec.Service.Name,
+				},
 			},
-		},
+		}
+
+		log.V(2).Info("retrieving the backing service object", "backingServiceCR", backingServiceCR)
+		if err := r.Get(ctx, backingServiceCRLookupKey, backingServiceCR); err != nil {
+			log.Error(err, "unable to retrieve backing service")
+			return ctrl.Result{}, err
+		}
+		log.V(1).Info("backing service object retrieved", "backingServiceCR", backingServiceCR)
+
+		ps := &ProvisionedService{}
+
+		log.V(2).Info("mapping backing service with the provisioned service")
+		if err := mergo.Map(ps, backingServiceCR.Object, mergo.WithOverride); err != nil {
+			log.Error(err, "unable to map backing service with the provisioned service")
+			return ctrl.Result{}, err
+		}
+		log.V(1).Info("completed mapping backing service with the provisioned service", "ProvisionedService", ps)
+
+		secretLookupKey = client.ObjectKey{Name: ps.Status.Binding.Name, Namespace: req.NamespacedName.Namespace}
 	}
-
-	log.V(2).Info("retrieving the backing service object", "backingServiceCR", backingServiceCR)
-	if err := r.Get(ctx, backingServiceCRLookupKey, backingServiceCR); err != nil {
-		log.Error(err, "unable to retrieve backing service")
-		return ctrl.Result{}, err
-	}
-	log.V(1).Info("backing service object retrieved", "backingServiceCR", backingServiceCR)
-
-	ps := &ProvisionedService{}
-
-	log.V(2).Info("mapping backing service with the provisioned service")
-	if err := mergo.Map(ps, backingServiceCR.Object, mergo.WithOverride); err != nil {
-		log.Error(err, "unable to map backing service with the provisioned service")
-		return ctrl.Result{}, err
-	}
-	log.V(1).Info("completed mapping backing service with the provisioned service", "ProvisionedService", ps)
-
-	secretLookupKey := client.ObjectKey{Name: ps.Status.Binding.Name, Namespace: req.NamespacedName.Namespace}
 	psSecret := &corev1.Secret{}
 
 	log.V(1).Info("retrieving the secret object")

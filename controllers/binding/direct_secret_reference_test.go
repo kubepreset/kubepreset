@@ -25,9 +25,7 @@ import (
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	apixv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
@@ -39,7 +37,7 @@ import (
 	bindingv1beta1 "github.com/kubepreset/kubepreset/apis/binding/v1beta1"
 )
 
-var _ = Describe("ServiceBinding Controller:", func() {
+var _ = Describe("Direct Secret Reference:", func() {
 
 	const (
 		timeout       = time.Second * 20
@@ -49,7 +47,7 @@ var _ = Describe("ServiceBinding Controller:", func() {
 		podInterval   = time.Second * 20
 	)
 
-	Context("When creating ServiceBinding with ProvisionedService", func() {
+	Context("When creating ServiceBinding with Direct Secret Reference", func() {
 
 		AfterEach(func() {
 			ctx := context.Background()
@@ -72,40 +70,6 @@ var _ = Describe("ServiceBinding Controller:", func() {
 
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, deploymentLookupKey, deletedDeployment)
-				return err != nil
-			}, timeout, interval).Should(BeTrue())
-
-			backingServiceCR := &unstructured.Unstructured{
-				Object: map[string]interface{}{
-					"kind":       "BackingService",
-					"apiVersion": "app1.example.org/v1alpha1",
-					"metadata": map[string]interface{}{
-						"name": "back1",
-					}}}
-
-			err = k8sClient.Delete(ctx, backingServiceCR, client.GracePeriodSeconds(0))
-			Expect(err).ShouldNot(HaveOccurred())
-
-			backingServiceCRLookupKey := types.NamespacedName{Name: "back1", Namespace: testNamespace}
-			deletedBackingServiceCR := &unstructured.Unstructured{}
-
-			Eventually(func() bool {
-				err := k8sClient.Get(ctx, backingServiceCRLookupKey, deletedBackingServiceCR)
-				return err != nil
-			}, timeout, interval).Should(BeTrue())
-
-			backingServiceCRD := &apixv1.CustomResourceDefinition{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "backingservices.app1.example.org",
-				}}
-			err = k8sClient.Delete(ctx, backingServiceCRD, client.GracePeriodSeconds(0))
-			Expect(err).ShouldNot(HaveOccurred())
-
-			backingServiceCRDLookupKey := types.NamespacedName{Name: "backingservices.app1.example.org"}
-			deletedBackingServiceCRD := &apixv1.CustomResourceDefinition{}
-
-			Eventually(func() bool {
-				err := k8sClient.Get(ctx, backingServiceCRDLookupKey, deletedBackingServiceCRD)
 				return err != nil
 			}, timeout, interval).Should(BeTrue())
 
@@ -162,67 +126,6 @@ var _ = Describe("ServiceBinding Controller:", func() {
 
 		It("should update the ServiceBinding status conditions for type `Ready` with value `True`", func() {
 			ctx := context.Background()
-			By("Creating BackingService CRD")
-			backingServiceCRD := &apixv1.CustomResourceDefinition{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "backingservices.app1.example.org",
-				},
-				Spec: apixv1.CustomResourceDefinitionSpec{
-					Group: "app1.example.org",
-					Versions: []apixv1.CustomResourceDefinitionVersion{{
-						Name:    "v1alpha1",
-						Served:  true,
-						Storage: true,
-						Schema: &apixv1.CustomResourceValidation{
-							OpenAPIV3Schema: &apixv1.JSONSchemaProps{
-								Type: "object",
-								Properties: map[string]apixv1.JSONSchemaProps{
-									"status": {
-										Type: "object",
-										Properties: map[string]apixv1.JSONSchemaProps{
-											"binding": {
-												Type: "object",
-												Properties: map[string]apixv1.JSONSchemaProps{
-													"name": {
-														Type: "string",
-													},
-												},
-												Required: []string{"name"},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-					},
-					Names: apixv1.CustomResourceDefinitionNames{
-						Plural: "backingservices",
-						Kind:   "BackingService",
-					},
-					Scope: apixv1.ClusterScoped,
-				}}
-			Expect(k8sClient.Create(ctx, backingServiceCRD)).Should(Succeed())
-
-			backingServiceCRDLookupKey := types.NamespacedName{Name: "backingservices.app1.example.org"}
-			createdBackingServiceCRD := &apixv1.CustomResourceDefinition{}
-
-			By("Verifying BackingService CRD")
-			// Retry getting newly created BackingService CRD
-			// Important: This is required as it is going to be used immediately
-			Eventually(func() bool {
-				err := k8sClient.Get(ctx, backingServiceCRDLookupKey, createdBackingServiceCRD)
-				if err != nil {
-					return false
-				}
-				for _, condition := range createdBackingServiceCRD.Status.Conditions {
-					if condition.Type == apixv1.Established &&
-						condition.Status == apixv1.ConditionTrue {
-						return true
-					}
-				}
-				return false
-			}, timeout, interval).Should(BeTrue())
 
 			By("Creating Secret")
 			secret := &corev1.Secret{
@@ -238,23 +141,6 @@ var _ = Describe("ServiceBinding Controller:", func() {
 				},
 			}
 			Expect(k8sClient.Create(ctx, secret)).Should(Succeed())
-
-			By("Creating BackingService CR")
-			backingServiceCR := &unstructured.Unstructured{
-				Object: map[string]interface{}{
-					"kind":       "BackingService",
-					"apiVersion": "app1.example.org/v1alpha1",
-					"metadata": map[string]interface{}{
-						"name": "back1",
-					},
-					"status": map[string]interface{}{
-						"binding": map[string]interface{}{
-							"name": "secret1",
-						},
-					},
-				},
-			}
-			Expect(k8sClient.Create(ctx, backingServiceCR)).Should(Succeed())
 
 			matchLabels := map[string]string{
 				"environment": "test1",
@@ -333,9 +219,9 @@ var _ = Describe("ServiceBinding Controller:", func() {
 						Name:       "app1",
 					},
 					Service: &bindingv1beta1.Service{
-						APIVersion: "app1.example.org/v1alpha1",
-						Kind:       "BackingService",
-						Name:       "back1",
+						APIVersion: "v1",
+						Kind:       "Secret",
+						Name:       "secret1",
 					},
 					Env: []bindingv1beta1.Environment{
 						{Name: "BACKING_SERVICE_USERNAME", Key: "username"},
@@ -430,7 +316,7 @@ var _ = Describe("ServiceBinding Controller:", func() {
 		})
 	})
 
-	Context("When creating ServiceBinding with ProvisionedService and overrides for Type and Provider", func() {
+	Context("When creating ServiceBinding with Direct Secret Reference and overrides for Type and Provider", func() {
 
 		AfterEach(func() {
 			ctx := context.Background()
@@ -453,40 +339,6 @@ var _ = Describe("ServiceBinding Controller:", func() {
 
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, deploymentLookupKey, deletedDeployment)
-				return err != nil
-			}, timeout, interval).Should(BeTrue())
-
-			backingServiceCR := &unstructured.Unstructured{
-				Object: map[string]interface{}{
-					"kind":       "BackingService",
-					"apiVersion": "app2.example.org/v1alpha1",
-					"metadata": map[string]interface{}{
-						"name": "back2",
-					}}}
-
-			err = k8sClient.Delete(ctx, backingServiceCR, client.GracePeriodSeconds(0))
-			Expect(err).ShouldNot(HaveOccurred())
-
-			backingServiceCRLookupKey := types.NamespacedName{Name: "back2", Namespace: testNamespace}
-			deletedBackingServiceCR := &unstructured.Unstructured{}
-
-			Eventually(func() bool {
-				err := k8sClient.Get(ctx, backingServiceCRLookupKey, deletedBackingServiceCR)
-				return err != nil
-			}, timeout, interval).Should(BeTrue())
-
-			backingServiceCRD := &apixv1.CustomResourceDefinition{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "backingservices.app2.example.org",
-				}}
-			err = k8sClient.Delete(ctx, backingServiceCRD, client.GracePeriodSeconds(0))
-			Expect(err).ShouldNot(HaveOccurred())
-
-			backingServiceCRDLookupKey := types.NamespacedName{Name: "backingservices.app2.example.org"}
-			deletedBackingServiceCRD := &apixv1.CustomResourceDefinition{}
-
-			Eventually(func() bool {
-				err := k8sClient.Get(ctx, backingServiceCRDLookupKey, deletedBackingServiceCRD)
 				return err != nil
 			}, timeout, interval).Should(BeTrue())
 
@@ -543,67 +395,6 @@ var _ = Describe("ServiceBinding Controller:", func() {
 
 		It("should update the Pod with overridden values for Type and Provider", func() {
 			ctx := context.Background()
-			By("Creating BackingService CRD")
-			backingServiceCRD := &apixv1.CustomResourceDefinition{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "backingservices.app2.example.org",
-				},
-				Spec: apixv1.CustomResourceDefinitionSpec{
-					Group: "app2.example.org",
-					Versions: []apixv1.CustomResourceDefinitionVersion{{
-						Name:    "v1alpha1",
-						Served:  true,
-						Storage: true,
-						Schema: &apixv1.CustomResourceValidation{
-							OpenAPIV3Schema: &apixv1.JSONSchemaProps{
-								Type: "object",
-								Properties: map[string]apixv1.JSONSchemaProps{
-									"status": {
-										Type: "object",
-										Properties: map[string]apixv1.JSONSchemaProps{
-											"binding": {
-												Type: "object",
-												Properties: map[string]apixv1.JSONSchemaProps{
-													"name": {
-														Type: "string",
-													},
-												},
-												Required: []string{"name"},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-					},
-					Names: apixv1.CustomResourceDefinitionNames{
-						Plural: "backingservices",
-						Kind:   "BackingService",
-					},
-					Scope: apixv1.ClusterScoped,
-				}}
-			Expect(k8sClient.Create(ctx, backingServiceCRD)).Should(Succeed())
-
-			backingServiceCRDLookupKey := types.NamespacedName{Name: "backingservices.app2.example.org"}
-			createdBackingServiceCRD := &apixv1.CustomResourceDefinition{}
-
-			By("Verifying BackingService CRD")
-			// Retry getting newly created BackingService CRD
-			// Important: This is required as it is going to be used immediately
-			Eventually(func() bool {
-				err := k8sClient.Get(ctx, backingServiceCRDLookupKey, createdBackingServiceCRD)
-				if err != nil {
-					return false
-				}
-				for _, condition := range createdBackingServiceCRD.Status.Conditions {
-					if condition.Type == apixv1.Established &&
-						condition.Status == apixv1.ConditionTrue {
-						return true
-					}
-				}
-				return false
-			}, timeout, interval).Should(BeTrue())
 
 			By("Creating Secret")
 			secret := &corev1.Secret{
@@ -619,23 +410,6 @@ var _ = Describe("ServiceBinding Controller:", func() {
 				},
 			}
 			Expect(k8sClient.Create(ctx, secret)).Should(Succeed())
-
-			By("Creating BackingService CR")
-			backingServiceCR := &unstructured.Unstructured{
-				Object: map[string]interface{}{
-					"kind":       "BackingService",
-					"apiVersion": "app2.example.org/v1alpha1",
-					"metadata": map[string]interface{}{
-						"name": "back2",
-					},
-					"status": map[string]interface{}{
-						"binding": map[string]interface{}{
-							"name": "secret2",
-						},
-					},
-				},
-			}
-			Expect(k8sClient.Create(ctx, backingServiceCR)).Should(Succeed())
 
 			matchLabels := map[string]string{
 				"environment": "test2",
@@ -716,9 +490,9 @@ var _ = Describe("ServiceBinding Controller:", func() {
 						Name:       "app2",
 					},
 					Service: &bindingv1beta1.Service{
-						APIVersion: "app2.example.org/v1alpha1",
-						Kind:       "BackingService",
-						Name:       "back2",
+						APIVersion: "v1",
+						Kind:       "Secret",
+						Name:       "secret2",
 					},
 					Env: []bindingv1beta1.Environment{
 						{Name: "BACKING_SERVICE_USERNAME", Key: "username"},

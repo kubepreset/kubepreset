@@ -65,7 +65,7 @@ helm delete my-kubepreset
 - [ ] Add support for label selectors for application
 - [ ] Add support for specifying containers to inject (only name-based, and don't support index)
 - [x] Add support for environment variables
-- [ ] Add support for Direct Secret Reference
+- [x] Add support for Direct Secret Reference
 
 ### 0.4.0
 
