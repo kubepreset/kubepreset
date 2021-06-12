@@ -19,6 +19,7 @@ package v1beta1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // ServiceBindingSpec defines the desired state of ServiceBinding
@@ -85,6 +86,8 @@ type Application struct {
 	// Mutually exclusive with Name.
 	// +optional
 	Selector *metav1.LabelSelector `json:"selector,omitempty"`
+
+	Containers []intstr.IntOrString `json:"containers,omitempty"`
 }
 
 // ServiceBindingStatus defines the observed state of ServiceBinding

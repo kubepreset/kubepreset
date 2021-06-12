@@ -18,7 +18,7 @@ metadata:
     capabilities: Basic Install
     operators.operatorframework.io/builder: operator-sdk-v1.7.1+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
-  name: kubepreset.v0.0.1
+  name: kubepreset.v0.3.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -39,7 +39,7 @@ spec:
       clusterPermissions:
       - rules:
         - apiGroups:
-          - binding.x-k8s.io
+          - service.binding
           resources:
           - servicebindings
           verbs:
@@ -51,13 +51,7 @@ spec:
           - update
           - watch
         - apiGroups:
-          - binding.x-k8s.io
-          resources:
-          - servicebindings/finalizers
-          verbs:
-          - update
-        - apiGroups:
-          - binding.x-k8s.io
+          - service.binding
           resources:
           - servicebindings/status
           verbs:
@@ -108,7 +102,7 @@ spec:
                 - --leader-elect
                 command:
                 - /manager
-                image: quay.io/kubepreset/kubepreset:v0.3.0
+                image: controller:latest
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -194,4 +188,4 @@ spec:
   provider:
     name: Baiju Muthukadan
     url: https://kubepreset.dev
-  version: 0.0.1
+  version: 0.3.0

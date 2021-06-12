@@ -229,6 +229,102 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 	log.V(1).Info("application object after setting the update volume", "Application", application)
 
+	log.V(2).Info("referencing the initContainers in an unstructured object")
+	initContainers, found, err := unstructured.NestedSlice(application.Object, "spec", "template", "spec", "initContainers")
+	if !found {
+		e := &field.Error{Type: field.ErrorTypeRequired, Field: "spec.template.spec.initContainers", Detail: "empty initContainers"}
+		log.V(0).Info("initContainers not found in the application object", "error", e)
+	}
+	if err != nil {
+		log.Error(err, "unable to referenc initContainers in the application object")
+		return ctrl.Result{}, err
+	}
+
+INIT_CONTAINERS_OUTER:
+	for i := range initContainers {
+		initContainer := &initContainers[i]
+		log.V(2).Info("updating initContainer", "initContainer", initContainer)
+		c := &corev1.Container{}
+		u := (*initContainer).(map[string]interface{})
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u, c); err != nil {
+			return ctrl.Result{}, err
+		}
+
+		if len(sb.Spec.Application.Containers) > 0 {
+			found := false
+			count := 0
+			for _, v := range sb.Spec.Application.Containers {
+				log.V(2).Info("init container", "container value", v, "name", c.Name)
+				if v.StrVal == c.Name {
+					break
+				}
+				found = true
+				count += 1
+			}
+			if found && len(sb.Spec.Application.Containers) == count {
+				continue INIT_CONTAINERS_OUTER
+			}
+
+		}
+
+		for _, e := range sb.Spec.Env {
+			c.Env = append(c.Env, corev1.EnvVar{
+				Name:  e.Name,
+				Value: string(psSecret.Data[e.Key]),
+			})
+
+		}
+		mountPath := ""
+		for _, e := range c.Env {
+			if e.Name == ServiceBindingRoot {
+				mountPath = path.Join(e.Value, mountPathDir)
+				break
+			}
+		}
+
+		if mountPath == "" {
+			mountPath = path.Join("/bindings", mountPathDir)
+			c.Env = append(c.Env, corev1.EnvVar{
+				Name:  ServiceBindingRoot,
+				Value: "/bindings",
+			})
+		}
+
+		volumeMount := corev1.VolumeMount{
+			Name:      volumeName,
+			MountPath: mountPath,
+			ReadOnly:  true,
+		}
+
+		volumeMountFound := false
+		for j, vm := range c.VolumeMounts {
+			if strings.HasPrefix(vm.Name, volumeNamePrefix) {
+				c.VolumeMounts[j] = volumeMount
+				volumeMountFound = true
+				break
+			}
+		}
+
+		if !volumeMountFound {
+			c.VolumeMounts = append(c.VolumeMounts, volumeMount)
+		}
+
+		nu, err := runtime.DefaultUnstructuredConverter.ToUnstructured(c)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
+		initContainers[i] = nu
+	}
+
+	log.V(1).Info("updated initContainer with volume and volume mounts", "initContainers", initContainers)
+
+	log.V(2).Info("setting the updated initContainers into the application using the unstructured object")
+	if err := unstructured.SetNestedSlice(application.Object, initContainers, "spec", "template", "spec", "initContainers"); err != nil {
+		return ctrl.Result{}, err
+	}
+	log.V(1).Info("application object after setting the updated initContainers", "Application", application)
+
 	log.V(2).Info("referencing the containers in an unstructured object")
 	containers, found, err := unstructured.NestedSlice(application.Object, "spec", "template", "spec", "containers")
 	if !found {
@@ -241,6 +337,7 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
+CONTAINERS_OUTER:
 	for i := range containers {
 		container := &containers[i]
 		log.V(2).Info("updating container", "container", container)
@@ -248,6 +345,23 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		u := (*container).(map[string]interface{})
 		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u, c); err != nil {
 			return ctrl.Result{}, err
+		}
+
+		if len(sb.Spec.Application.Containers) > 0 {
+			found := false
+			count := 0
+			for _, v := range sb.Spec.Application.Containers {
+				log.V(2).Info("init container", "container value", v, "name", c.Name)
+				if v.StrVal == c.Name {
+					break
+				}
+				found = true
+				count += 1
+			}
+			if found && len(sb.Spec.Application.Containers) == count {
+				continue CONTAINERS_OUTER
+			}
+
 		}
 
 		for _, e := range sb.Spec.Env {
