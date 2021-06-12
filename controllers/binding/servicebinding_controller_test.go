@@ -333,7 +333,6 @@ var _ = Describe("ServiceBinding Controller:", func() {
 			}, podTimeout, podInterval).Should(BeTrue())
 
 			Expect(len(createdServiceBinding.Status.Conditions)).To(Equal(1))
-			Expect(createdServiceBinding.Status.ObservedGeneration).To(Equal(int64(1)))
 			Expect(createdServiceBinding.Status.Binding.Name).To(Equal("sb1"))
 
 			applicationLookupKey := types.NamespacedName{Name: sb.Spec.Application.Name, Namespace: testNamespace}
@@ -685,7 +684,6 @@ var _ = Describe("ServiceBinding Controller:", func() {
 			}, podTimeout, podInterval).Should(BeTrue())
 
 			Expect(len(createdServiceBinding.Status.Conditions)).To(Equal(1))
-			Expect(createdServiceBinding.Status.ObservedGeneration).To(Equal(int64(1)))
 			Expect(createdServiceBinding.Status.Binding.Name).To(Equal("sb2"))
 
 			applicationLookupKey := types.NamespacedName{Name: sb.Spec.Application.Name, Namespace: testNamespace}

@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	bindingv1beta1 "github.com/kubepreset/kubepreset/apis/binding/v1beta1"
 )
@@ -70,23 +71,19 @@ var deploymentGK = schema.GroupKind{Group: "apps", Kind: "Deployment"}
 func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("servicebinding", req.NamespacedName)
 
-	log.V(2).Info("starting reconciliation")
+	log.V(0).Info("starting reconciliation")
 
 	var sb bindingv1beta1.ServiceBinding
 
-	log.V(1).Info("retrieving ServiceBinding object")
+	log.V(2).Info("retrieving ServiceBinding object", "ServiceBinding", sb)
 	if err := r.Get(ctx, req.NamespacedName, &sb); err != nil {
-		log.Error(err, "unable to fetch ServiceBinding")
+		log.Error(err, "unable to retrieve ServiceBinding")
 		// we'll ignore not-found errors, since they can't be fixed by an immediate
 		// requeue (we'll need to wait for a new notification), and we can get them
 		// on deleted requests.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	log.V(2).Info("ServiceBinding object retrieved", "name", sb.Name, "annotations", sb.Annotations, "labels", sb.Labels)
-
-	if sb.Status.ObservedGeneration == sb.Generation {
-		return ctrl.Result{}, nil
-	}
+	log.V(2).Info("ServiceBinding object retrieved", "ServiceBinding", sb)
 
 	backingServiceCRLookupKey := client.ObjectKey{Name: sb.Spec.Service.Name, Namespace: req.NamespacedName.Namespace}
 
@@ -100,30 +97,31 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		},
 	}
 
-	log.V(1).Info("retrieving the backing service object")
+	log.V(2).Info("retrieving the backing service object", "backingServiceCR", backingServiceCR)
 	if err := r.Get(ctx, backingServiceCRLookupKey, backingServiceCR); err != nil {
-		log.Error(err, "unable to fetch backing service")
+		log.Error(err, "unable to retrieve backing service")
 		return ctrl.Result{}, err
 	}
-	log.V(2).Info("backing service object retrieved", "status", backingServiceCR.Object["status"])
+	log.V(1).Info("backing service object retrieved", "backingServiceCR", backingServiceCR)
 
 	ps := &ProvisionedService{}
 
 	log.V(2).Info("mapping backing service with the provisioned service")
 	if err := mergo.Map(ps, backingServiceCR.Object, mergo.WithOverride); err != nil {
+		log.Error(err, "unable to map backing service with the provisioned service")
 		return ctrl.Result{}, err
 	}
-	log.V(2).Info("completed mapping backing service with the provisioned service", "provisioned-service", ps)
+	log.V(1).Info("completed mapping backing service with the provisioned service", "ProvisionedService", ps)
 
 	secretLookupKey := client.ObjectKey{Name: ps.Status.Binding.Name, Namespace: req.NamespacedName.Namespace}
 	psSecret := &corev1.Secret{}
 
 	log.V(1).Info("retrieving the secret object")
 	if err := r.Get(ctx, secretLookupKey, psSecret); err != nil {
-		log.Error(err, "unable to fetch backing service")
+		log.Error(err, "unable to retrieve backing service")
 		return ctrl.Result{}, err
 	}
-	log.V(2).Info("the secret object retrieved", "secret-data", psSecret.Data)
+	log.V(2).Info("the secret object retrieved", "Secret", psSecret)
 
 	applicationLookupKey := client.ObjectKey{Name: sb.Spec.Application.Name, Namespace: req.NamespacedName.Namespace}
 
@@ -137,12 +135,12 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		},
 	}
 
-	log.V(1).Info("retrieving the application object")
+	log.V(2).Info("retrieving the application object", "Application", application)
 	if err := r.Get(ctx, applicationLookupKey, application); err != nil {
-		log.Error(err, "unable to fetch application")
+		log.Error(err, "unable to retrieve application")
 		return ctrl.Result{}, err
 	}
-	log.V(2).Info("application object retrieved", "metadata", application.Object["metadata"])
+	log.V(1).Info("application object retrieved", "Application", application)
 
 	cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: sb.Name}}
 	cm.Namespace = sb.Namespace
@@ -156,11 +154,12 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	cm.OwnerReferences = []metav1.OwnerReference{*metav1.NewControllerRef(sb.GetObjectMeta(), sb.GroupVersionKind())}
-	log.V(1).Info("Creating ConfigMap resource for binding")
+	log.V(1).Info("Creating ConfigMap resource for binding", "ConfigMap", cm)
 	if err := r.Create(ctx, cm); err != nil {
-		log.Error(err, "unable to create ConfigMap resource", "cm", cm)
+		log.Error(err, "unable to create ConfigMap resource")
 		return ctrl.Result{}, err
 	}
+	log.V(1).Info("ConfigMap created", "ConfigMap", cm)
 
 	volumeNamePrefix := sb.Name
 	if len(volumeNamePrefix) > 56 {
@@ -188,20 +187,20 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		},
 	}
 
-	log.V(2).Info("converting the volumeProjection to an unstructured object")
+	log.V(2).Info("converting the volumeProjection to an unstructured object", "Volume", volumeProjection)
 	unstructuredVolume, err := runtime.DefaultUnstructuredConverter.ToUnstructured(volumeProjection)
 	if err != nil {
 		log.Error(err, "unable to convert volumeProjection to an unstructured object")
 		return ctrl.Result{}, err
 	}
 
-	log.V(2).Info("retrieving the existing volumes as an unstructured object")
+	log.V(2).Info("referencing the volume in an unstructured object")
 	volumes, found, err := unstructured.NestedSlice(application.Object, "spec", "template", "spec", "volumes")
 	if !found {
 		log.V(2).Info("volumes not found in the application object")
 	}
 	if err != nil {
-		log.Error(err, "locating volumes in the application object")
+		log.Error(err, "unable to reference the volumes in the application object")
 		return ctrl.Result{}, err
 	}
 	log.V(2).Info("Volumes values", "volumes", volumes)
@@ -223,8 +222,9 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if err := unstructured.SetNestedSlice(application.Object, volumes, "spec", "template", "spec", "volumes"); err != nil {
 		return ctrl.Result{}, err
 	}
+	log.V(1).Info("application object after setting the update volume", "Application", application)
 
-	log.V(2).Info("retrieving the containers as an unstructured object")
+	log.V(2).Info("referencing the containers in an unstructured object")
 	containers, found, err := unstructured.NestedSlice(application.Object, "spec", "template", "spec", "containers")
 	if !found {
 		e := &field.Error{Type: field.ErrorTypeRequired, Field: "spec.template.spec.containers", Detail: "empty containers"}
@@ -232,14 +232,13 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, apierrors.NewInvalid(deploymentGK, sb.Spec.Application.Name, field.ErrorList{e})
 	}
 	if err != nil {
-		log.Error(err, "locating containers in the application object")
+		log.Error(err, "unable to referenc containers in the application object")
 		return ctrl.Result{}, err
 	}
 
 	for i := range containers {
 		container := &containers[i]
-		// TODO Set log level to 2
-		log.V(1).Info("updating container", "container", container)
+		log.V(2).Info("updating container", "container", container)
 		c := &corev1.Container{}
 		u := (*container).(map[string]interface{})
 		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u, c); err != nil {
@@ -296,34 +295,34 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		containers[i] = nu
 	}
 
-	// TODO Set log level to 2
-	log.V(1).Info("setting the updated containers into the application using the unstructured object")
+	log.V(1).Info("updated container with volume and volume mounts", "containers", containers)
+
+	log.V(2).Info("setting the updated containers into the application using the unstructured object")
 	if err := unstructured.SetNestedSlice(application.Object, containers, "spec", "template", "spec", "containers"); err != nil {
 		return ctrl.Result{}, err
 	}
+	log.V(1).Info("application object after setting the updated containers", "Application", application)
 
-	sb.Status.ObservedGeneration = sb.Generation
+	var conditionStatus bindingv1beta1.ConditionStatus = "True"
 
-	var s bindingv1beta1.ConditionStatus = "True"
-
-	log.V(1).Info("updating the application with updated volumes and volumeMounts")
+	log.V(2).Info("updating the application with updated volumes and volumeMounts")
 	if err := r.Update(ctx, application); err != nil {
 		log.Error(err, "unable to update the application", "application", application)
-		s = "False"
+		conditionStatus = "False"
 	}
 
-	return r.setStatus(ctx, log, sb, s)
+	return r.setStatus(ctx, log, sb, conditionStatus)
 }
 
 func (r *ServiceBindingReconciler) setStatus(ctx context.Context, log logr.Logger,
-	sb bindingv1beta1.ServiceBinding, value bindingv1beta1.ConditionStatus) (ctrl.Result, error) {
+	sb bindingv1beta1.ServiceBinding, conditionStatus bindingv1beta1.ConditionStatus) (ctrl.Result, error) {
 
 	sb.Status.Binding = &corev1.LocalObjectReference{Name: sb.Name}
 
 	conditionFound := false
 	for k, cond := range sb.Status.Conditions {
 		if cond.Type == bindingv1beta1.ConditionReady {
-			cond.Status = value
+			cond.Status = conditionStatus
 			sb.Status.Conditions[k] = cond
 			conditionFound = true
 		}
@@ -333,23 +332,26 @@ func (r *ServiceBindingReconciler) setStatus(ctx context.Context, log logr.Logge
 		c := bindingv1beta1.Condition{
 			LastTransitionTime: metav1.NewTime(time.Now()),
 			Type:               bindingv1beta1.ConditionReady,
-			Status:             value,
+			Status:             conditionStatus,
 		}
 		sb.Status.Conditions = append(sb.Status.Conditions, c)
 	}
 
-	log.V(1).Info("updating the service binding status")
+	log.V(2).Info("updating the service binding status")
 	if err := r.Status().Update(ctx, &sb); err != nil {
 		log.Error(err, "unable to update the service binding", "ServiceBinding", sb)
 		return ctrl.Result{}, err
 	}
+	log.V(1).Info("service binding status updated", "ServiceBinding", sb)
 
 	return ctrl.Result{}, nil
 }
 
 // SetupWithManager setup controller with manager
 func (r *ServiceBindingReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	pred := predicate.GenerationChangedPredicate{}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&bindingv1beta1.ServiceBinding{}).
+		WithEventFilter(pred).
 		Complete(r)
 }

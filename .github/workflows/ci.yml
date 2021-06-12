@@ -32,6 +32,8 @@ jobs:
       - name: Create k8s Kind Cluster
         uses: helm/kind-action@v1.1.0
 
+      - run: go get github.com/onsi/ginkgo/ginkgo
+
       - name: Run tests
         env:
           LOG_LEVEL: TRACE
