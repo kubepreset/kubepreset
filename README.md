@@ -75,7 +75,7 @@ helm delete my-kubepreset
 
 ### 1.0.0
 
-- [ ] Add support for full spec except "Binding Secret Generation Strategies" extension
+- [ ] Add support for full spec
 
 ## Contributing to KubePreset
 
