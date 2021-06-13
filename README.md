@@ -62,19 +62,15 @@ helm delete my-kubepreset
 
 ### 0.3.0
 
+- [ ] Add support for Application Resource Mapping
 - [ ] Add support for label selectors for application
-- [x] Add support for specifying containers to inject (only name-based)
+- [x] Add support for specifying containers by name to bind
 - [x] Add support for environment variables
 - [x] Add support for Direct Secret Reference
 
-### 0.4.0
-
-- [ ] Add support for Application Resource Mapping
-- [ ] User manual
-- [ ] Demo video
-
 ### 1.0.0
 
+- [ ] User manual
 - [ ] Add support for full spec
 
 ## Contributing to KubePreset
