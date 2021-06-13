@@ -182,22 +182,22 @@ To run the tests:
 
     make test
 
-When running tests, to see `INFO` level logging, set this environment variable:
+When running tests, to see the `INFO` level logging, set this environment variable:
 
     export LOG_LEVEL=INFO
     make test
 
-To see `DEBUG` level logging, set the value like this:
+To see the `DEBUG` level logging, set the value like this:
 
     export LOG_LEVEL=DEBUG
     make test
 
-To see `TRACE` level logging, set the value like this:
+To see the `TRACE` level logging, set the value like this:
 
     export LOG_LEVEL=TRACE
     make test
 
-If `LOG_LEVEL` is not set, the default level is going be at `TRACE` level.
+If the `LOG_LEVEL` has not set, the default level is going to be at the `TRACE` level.
 
 [help-wanted]: https://github.com/kubepreset/kubepreset/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22
 [conduct]: https://github.com/kubepreset/kubepreset/blob/main/CODE_OF_CONDUCT.md
