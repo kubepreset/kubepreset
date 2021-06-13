@@ -53,6 +53,8 @@ type ServiceBindingSpec struct {
 	Env []Environment `json:"env,omitempty"`
 }
 
+// Service represents a Provisioned Service
+// Ref. https://github.com/k8s-service-bindings/spec#provisioned-service
 type Service struct {
 	// API version of the referent.
 	// +optional
@@ -68,6 +70,8 @@ type Service struct {
 	Name string `json:"name"`
 }
 
+// Application resource to inject the binding info.
+// It could be any process running within a container.
 type Application struct {
 	// API version of the referent.
 	// +optional
@@ -118,17 +122,23 @@ type Environment struct {
 // For long-running resources.
 const ConditionReady ConditionType = "Ready"
 
+// Values for ConditionReady
 const (
 	ConditionTrue    ConditionStatus = "True"
 	ConditionFalse   ConditionStatus = "False"
 	ConditionUnknown ConditionStatus = "Unknown"
 )
 
+// Conditions is a slice of Condition objects
 type Conditions []Condition
 
+// ConditionStatus ...
 type ConditionStatus string
+
+// ConditionType ...
 type ConditionType string
 
+// Condition represents a status condition
 type Condition struct {
 	// Type of condition.
 	// +required

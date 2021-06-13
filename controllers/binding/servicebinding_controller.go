@@ -39,7 +39,7 @@ import (
 )
 
 // ServiceBindingRoot points to the environment variable in the container
-// which is used as the volume mount path.  In the abscence of this
+// which is used as the volume mount path.  In the absence of this
 // environment variable, `/bindings` is used as the volume mount path.
 // Refer: https://github.com/k8s-service-bindings/spec#reconciler-implementation
 const ServiceBindingRoot = "SERVICE_BINDING_ROOT"
@@ -67,7 +67,7 @@ var deploymentGK = schema.GroupKind{Group: "apps", Kind: "Deployment"}
 // +kubebuilder:rbac:groups=service.binding,resources=servicebindings,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=service.binding,resources=servicebindings/status,verbs=get;update;patch
 
-// ServiceBindingReconciler based on changes in the ServiceBinding CR or Provisioned Service Secret
+// Reconcile based on changes in the ServiceBinding CR or Provisioned Service Secret
 func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("servicebinding", req.NamespacedName)
 
@@ -259,7 +259,7 @@ INIT_CONTAINERS_OUTER:
 					break
 				}
 				found = true
-				count += 1
+				count++
 			}
 			if found && len(sb.Spec.Application.Containers) == count {
 				continue INIT_CONTAINERS_OUTER
@@ -356,7 +356,7 @@ CONTAINERS_OUTER:
 					break
 				}
 				found = true
-				count += 1
+				count++
 			}
 			if found && len(sb.Spec.Application.Containers) == count {
 				continue CONTAINERS_OUTER
