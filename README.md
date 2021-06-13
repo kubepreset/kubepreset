@@ -71,7 +71,7 @@ helm delete my-kubepreset
 ### 1.0.0
 
 - [ ] User manual
-- [ ] Add support for full spec
+- [ ] Add support for the [full specification][milestone-1.0]
 
 ## Contributing to KubePreset
 
@@ -161,3 +161,4 @@ This project is maintained by [KubePreset Team (kubepreset@googlegroups.com)][gr
 [go]: https://golang.org
 [make]: https://en.wikipedia.org/wiki/Make_(software)
 [gcc]: https://gcc.gnu.org
+[milestone-1.0]: https://github.com/kubepreset/kubepreset/milestone/1
