@@ -170,6 +170,7 @@ spec:
                 description: Conditions the latest available observations of a resource's
                   current state.
                 items:
+                  description: Condition represents a status condition
                   properties:
                     lastTransitionTime:
                       description: LastTransitionTime is the last time the condition
