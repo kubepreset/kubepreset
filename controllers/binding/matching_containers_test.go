@@ -594,6 +594,9 @@ var _ = Describe("Matching Containers:", func() {
 							Type:   intstr.String,
 							StrVal: "dnsutils",
 						}, {
+							Type:   intstr.Int,
+							IntVal: 9,
+						}, {
 							Type:   intstr.String,
 							StrVal: "bindingdata2",
 						}},
