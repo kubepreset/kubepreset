@@ -63,10 +63,11 @@ helm delete my-kubepreset
 ### 0.3.0
 
 - [ ] Add support for Application Resource Mapping
-- [ ] Add support for label selectors for application
+- [x] Add support for label selectors for application
 - [x] Add support for specifying containers by name to bind
 - [x] Add support for environment variables
 - [x] Add support for Direct Secret Reference
+- [x] New API group x-k8s.io (may change before 1.0)
 
 ### 1.0.0
 
