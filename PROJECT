@@ -17,4 +17,12 @@ resources:
   kind: ServiceBinding
   path: github.com/kubepreset/kubepreset/apis/binding/v1beta1
   version: v1beta1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: x-k8s.io
+  group: binding
+  kind: ClusterApplicationResourceMapping
+  path: github.com/kubepreset/kubepreset/apis/binding/v1beta1
+  version: v1beta1
 version: "3"

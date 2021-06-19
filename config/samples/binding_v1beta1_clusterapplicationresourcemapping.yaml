@@ -1,0 +1,7 @@
+apiVersion: binding.x-k8s.io/v1beta1
+kind: ClusterApplicationResourceMapping
+metadata:
+  name: clusterapplicationresourcemapping-sample
+spec:
+  # Add fields here
+  foo: bar
