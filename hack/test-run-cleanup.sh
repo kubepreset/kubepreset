@@ -32,6 +32,14 @@ kubectl delete service myservice6
 
 kubectl delete deployment second-app6
 
+kubectl delete deployment app7
+kubectl delete crd backingservices.app7.example.org
+kubectl delete secrets secret7
+kubectl delete service myservice7
+
+
 kubectl delete crd servicebindings.binding.x-k8s.io
+kubectl delete crd clusterapplicationresourcemappings.binding.x-k8s.io
+kubectl delete crd custompods.binding.kubepreset.dev
 sleep 5
 kubectl get pod

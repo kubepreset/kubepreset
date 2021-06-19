@@ -62,7 +62,7 @@ helm delete my-kubepreset
 
 ### 0.3.0
 
-- [ ] Add support for Application Resource Mapping
+- [x] Add support for Application Resource Mapping
 - [x] Add support for label selectors for application
 - [x] Add support for specifying containers by name to bind
 - [x] Add support for environment variables

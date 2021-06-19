@@ -28,6 +28,7 @@ import (
 	uzap "go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	custompod "github.com/kubepreset/custompod/api/v1beta1"
 	apixv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -84,8 +85,12 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 	useExistingCluster := true
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:  []string{filepath.Join("..", "..", "config", "crd", "bases")},
+		CRDDirectoryPaths: []string{
+			filepath.Join("..", "..", "config", "crd", "bases"),
+			filepath.Join("..", "..", "config", "crd", "thirdparty"),
+		},
 		UseExistingCluster: &useExistingCluster,
+		CRDInstallOptions:  envtest.CRDInstallOptions{CleanUpAfterUse: true},
 	}
 
 	var err error
@@ -97,6 +102,9 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	err = bindingv1beta1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = custompod.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme

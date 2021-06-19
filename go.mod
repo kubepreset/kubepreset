@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/go-logr/logr v0.3.0
 	github.com/imdario/mergo v0.3.10
+	github.com/kubepreset/custompod v0.0.0-20210620012502-9c6c8fc38a65
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.10.2
 	go.uber.org/zap v1.15.0
