@@ -81,6 +81,7 @@ func main() {
 	if err = (&bindingcontrollers.ServiceBindingReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
+		Log:    ctrl.Log.WithName("bindingcontrollers.servicebinding").WithName("ServiceBinding"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServiceBinding")
 		os.Exit(1)
