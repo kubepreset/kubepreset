@@ -207,6 +207,7 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				}
 				// Requeue with a time interval is required as the Secret name is not available to reconcile
 				// In future, probably watching for provisioned services based on label can be introduced
+				// or a webhook can detect provisioned service resource change and trigger reconciliation
 				return ctrl.Result{RequeueAfter: time.Minute * 1}, nil
 			}
 		}
