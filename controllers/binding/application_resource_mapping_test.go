@@ -136,7 +136,7 @@ var _ = Describe("Application Resource Mapping:", func() {
 				},
 				Spec: custompod.CustomPodSpec{
 					Containers: []corev1.Container{{
-						Image: "quay.io/kubepreset/bindingdata:latest",
+						Image: "ghcr.io/kubepreset/bindingdata:latest",
 						Name:  "bindingdata",
 					}},
 				},

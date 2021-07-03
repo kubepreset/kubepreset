@@ -173,16 +173,16 @@ var _ = Describe("Matching Containers:", func() {
 						},
 						Spec: corev1.PodSpec{
 							InitContainers: []corev1.Container{{
-								Image:   "gcr.io/kubernetes-e2e-test-images/dnsutils:1.3",
+								Image:   "ghcr.io/kubepreset/dnsutils:1.3",
 								Name:    "dnsutils",
 								Command: []string{"sh", "-c", "until nslookup myservice3; do echo waiting for myservice3; sleep 2s; done;"},
 							}},
 							Containers: []corev1.Container{{
-								Image: "quay.io/kubepreset/bindingdata:latest",
+								Image: "ghcr.io/kubepreset/bindingdata:latest",
 								Name:  "bindingdata1",
 								Args:  []string{"7080"},
 							}, {
-								Image: "quay.io/kubepreset/bindingdata:latest",
+								Image: "ghcr.io/kubepreset/bindingdata:latest",
 								Name:  "bindingdata2",
 								Args:  []string{"7081"},
 							}},
@@ -535,16 +535,16 @@ var _ = Describe("Matching Containers:", func() {
 						},
 						Spec: corev1.PodSpec{
 							InitContainers: []corev1.Container{{
-								Image:   "gcr.io/kubernetes-e2e-test-images/dnsutils:1.3",
+								Image:   "ghcr.io/kubepreset/dnsutils:1.3",
 								Name:    "dnsutils",
 								Command: []string{"sh", "-c", "until nslookup myservice4; do echo waiting for myservice4; sleep 2s; done;"},
 							}},
 							Containers: []corev1.Container{{
-								Image: "quay.io/kubepreset/bindingdata:latest",
+								Image: "ghcr.io/kubepreset/bindingdata:latest",
 								Name:  "bindingdata1",
 								Args:  []string{"7080"},
 							}, {
-								Image: "quay.io/kubepreset/bindingdata:latest",
+								Image: "ghcr.io/kubepreset/bindingdata:latest",
 								Name:  "bindingdata2",
 								Args:  []string{"7081"},
 							}},

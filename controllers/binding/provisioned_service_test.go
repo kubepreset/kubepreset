@@ -276,7 +276,7 @@ var _ = Describe("Provisioned Service:", func() {
 						},
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{{
-								Image: "quay.io/kubepreset/bindingdata:latest",
+								Image: "ghcr.io/kubepreset/bindingdata:latest",
 								Name:  "bindingdata",
 							}},
 						},
@@ -657,7 +657,7 @@ var _ = Describe("Provisioned Service:", func() {
 						},
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{{
-								Image: "quay.io/kubepreset/bindingdata:latest",
+								Image: "ghcr.io/kubepreset/bindingdata:latest",
 								Name:  "bindingdata",
 							}},
 						},
