@@ -33,8 +33,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	bindingv1beta1 "github.com/kubepreset/kubepreset/apis/binding/v1beta1"
+	jobwebhookv1 "github.com/kubepreset/kubepreset/apis/builtins/batch/v1"
 	bindingcontrollers "github.com/kubepreset/kubepreset/controllers/binding"
 	//+kubebuilder:scaffold:imports
 )
@@ -88,6 +90,9 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
+
+	mgr.GetWebhookServer().Register("/mutate-batch-v1-job", &webhook.Admission{Handler: &jobwebhookv1.JobBinder{Client: mgr.GetClient()}})
+	mgr.GetWebhookServer().Register("/validate-batch-v1-job", &webhook.Admission{Handler: &jobwebhookv1.JobValidator{Client: mgr.GetClient()}})
 
 	if err = (&bindingcontrollers.ServiceBindingReconciler{
 		Client: mgr.GetClient(),
