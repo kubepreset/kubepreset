@@ -262,7 +262,7 @@ var _ = Describe("Matching Containers:", func() {
 			}, podTimeout, podInterval).Should(BeTrue())
 
 			Expect(len(createdServiceBinding.Status.Conditions)).To(Equal(1))
-			Expect(createdServiceBinding.Status.Binding.Name).To(Equal("sb3"))
+			Expect(createdServiceBinding.Status.Binding.Name).To(Equal("secret3"))
 
 			applicationLookupKey := types.NamespacedName{Name: sb.Spec.Application.Name, Namespace: testNamespace}
 
@@ -634,7 +634,7 @@ var _ = Describe("Matching Containers:", func() {
 			}, podTimeout, podInterval).Should(BeTrue())
 
 			Expect(len(createdServiceBinding.Status.Conditions)).To(Equal(1))
-			Expect(createdServiceBinding.Status.Binding.Name).To(Equal("sb4"))
+			Expect(createdServiceBinding.Status.Binding.Name).To(Equal("secret4"))
 
 			applicationLookupKey := types.NamespacedName{Name: sb.Spec.Application.Name, Namespace: testNamespace}
 

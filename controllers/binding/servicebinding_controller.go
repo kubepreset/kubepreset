@@ -31,10 +31,15 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	bindingv1beta1 "github.com/kubepreset/kubepreset/apis/binding/v1beta1"
 )
@@ -113,7 +118,54 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 	log.V(2).Info("ServiceBinding object retrieved", "ServiceBinding", sb)
 
+	// name of the custom finalizer
+	finalizerName := "binding.kubepreset.dev/finalizer"
+	var conditionStatus bindingv1beta1.ConditionStatus
+	var reason string
+
+	var secretName string
+	if sb.Status.Binding != nil && sb.Status.Binding.Name != "" {
+		secretName = sb.Status.Binding.Name
+	}
+
+	// examine DeletionTimestamp to determine if object is under deletion
+	if sb.ObjectMeta.DeletionTimestamp.IsZero() {
+		// The object is not being deleted, so if it does not have the finalizer,
+		// then lets add the finalizer and update the object. This is equivalent
+		// registering the finalizer.
+		if !containsString(sb.GetFinalizers(), finalizerName) {
+			controllerutil.AddFinalizer(&sb, finalizerName)
+			if err := r.Update(ctx, &sb); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+	} else {
+		// The object is being deleted
+		if containsString(sb.GetFinalizers(), finalizerName) {
+			// finalizer is present, so lets handle any external dependency
+			// TODO: Unbind existing bindings
+			applications, result, err := r.getApplication(ctx, log, req, sb, secretName)
+			if err != nil {
+				return result, err
+			}
+			result, err = r.unbindApplications(ctx, log, req, sb, applications...)
+			if err != nil {
+				return result, err
+			}
+
+			// remove the finalizer from the list and update it.
+			controllerutil.RemoveFinalizer(&sb, finalizerName)
+			if err := r.Update(ctx, &sb); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+
+		// Stop reconciliation as the item is being deleted
+		return ctrl.Result{}, nil
+	}
+
 	var secretLookupKey client.ObjectKey
+
 	if sb.Spec.Service.Kind == "Secret" && sb.Spec.Service.APIVersion == "v1" {
 		secretLookupKey = client.ObjectKey{Name: sb.Spec.Service.Name, Namespace: req.NamespacedName.Namespace}
 	} else {
@@ -131,8 +183,32 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 		log.V(2).Info("retrieving the backing service object", "backingServiceCR", backingServiceCR)
 		if err := r.Get(ctx, backingServiceCRLookupKey, backingServiceCR); err != nil {
-			log.Error(err, "unable to retrieve backing service")
-			return ctrl.Result{}, err
+			reason = "unable to retrieve the backing service"
+			log.Error(err, reason)
+			conditionStatus = "False"
+			if sb.Status.Binding != nil && sb.Status.Binding.Name != "" {
+				// TODO: Unbind existing bindings
+				applications, result, err := r.getApplication(ctx, log, req, sb, sb.Status.Binding.Name)
+				if err != nil {
+					return result, err
+				}
+				result, err = r.unbindApplications(ctx, log, req, sb, applications...)
+				if err != nil {
+					return result, err
+				}
+
+				if _, err = r.setStatus(ctx, log, sb.Status.Binding.Name, sb, conditionStatus, reason); err != nil {
+					return ctrl.Result{}, err
+				}
+				return ctrl.Result{}, nil
+			} else {
+				if _, err = r.setStatus(ctx, log, "", sb, conditionStatus, reason); err != nil {
+					return ctrl.Result{}, err
+				}
+				// Requeue with a time interval is required as the Secret name is not available to reconcile
+				// In future, probably watching for provisioned services based on label can be introduced
+				return ctrl.Result{RequeueAfter: time.Minute * 1}, nil
+			}
 		}
 		log.V(1).Info("backing service object retrieved", "backingServiceCR", backingServiceCR)
 
@@ -149,15 +225,24 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 	psSecret := &corev1.Secret{}
 
-	log.V(1).Info("retrieving the secret object")
+	log.V(1).Info("retrieving the Secret object")
 	if err := r.Get(ctx, secretLookupKey, psSecret); err != nil {
-		log.Error(err, "unable to retrieve backing service")
-		return ctrl.Result{}, err
+		reason = "unable to retrieve the Secret object"
+		log.Error(err, reason)
+		// TODO: Unbind existing bindings
+		applications, result, err := r.getApplication(ctx, log, req, sb, psSecret.GetName())
+		if err != nil {
+			return result, err
+		}
+		result, err = r.unbindApplications(ctx, log, req, sb, applications...)
+		if err != nil {
+			return result, err
+		}
+
+		conditionStatus = "False"
+		return r.setStatus(ctx, log, secretLookupKey.Name, sb, conditionStatus, reason)
 	}
 	log.V(2).Info("the secret object retrieved", "Secret", psSecret)
-
-	var conditionStatus bindingv1beta1.ConditionStatus
-	var reason string
 
 	if sb.Spec.Application.Name != "" && sb.Spec.Application.Selector != nil {
 		err := AppNameSelectorInvariantErr{
@@ -166,7 +251,7 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		log.Error(err, "Both application name and selector cannot be used together")
 		conditionStatus = "False"
 		reason = "application name and selector cannot be used together"
-		return r.setStatus(ctx, log, sb, conditionStatus, reason)
+		return r.setStatus(ctx, log, psSecret.Name, sb, conditionStatus, reason)
 	}
 
 	cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: sb.Name}}
@@ -184,7 +269,10 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	log.V(1).Info("Creating ConfigMap resource for binding", "ConfigMap", cm)
 	if err := r.Create(ctx, cm); err != nil {
 		log.Error(err, "unable to create ConfigMap resource")
-		return ctrl.Result{}, err
+		if err := r.Delete(ctx, cm); err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{Requeue: true}, nil
 	}
 	log.V(1).Info("ConfigMap created", "ConfigMap", cm)
 
@@ -222,7 +310,28 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
+	applications, result, err := r.getApplication(ctx, log, req, sb, secretName)
+	if err != nil {
+		return result, err
+	}
+	return r.bindApplications(ctx, log, req, sb, psSecret, applications...)
+}
+
+type errorList []error
+
+func (el errorList) Error() string {
+	msg := ""
+	for _, e := range el {
+		msg += e.Error() + " "
+	}
+	return msg
+}
+
+func (r *ServiceBindingReconciler) getApplication(ctx context.Context, log logr.Logger, req ctrl.Request,
+	sb bindingv1beta1.ServiceBinding, secretName string) ([]unstructured.Unstructured, ctrl.Result, error) {
 	var applications []unstructured.Unstructured
+	var conditionStatus bindingv1beta1.ConditionStatus
+	var reason string
 
 	if sb.Spec.Application.Name != "" {
 		applicationLookupKey := client.ObjectKey{Name: sb.Spec.Application.Name, Namespace: req.NamespacedName.Namespace}
@@ -239,8 +348,11 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 		log.V(2).Info("retrieving the application object", "Application", application)
 		if err := r.Get(ctx, applicationLookupKey, application); err != nil {
-			log.Error(err, "unable to retrieve application")
-			return ctrl.Result{}, err
+			reason = "unable to retrieve application"
+			log.Error(err, reason)
+			conditionStatus = "False"
+			result, err := r.setStatus(ctx, log, secretName, sb, conditionStatus, reason)
+			return []unstructured.Unstructured{}, result, err
 		}
 		log.V(1).Info("application object retrieved", "Application", application)
 		applications = append(applications, *application)
@@ -262,24 +374,21 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			LabelSelector: labels.Set(sb.Spec.Application.Selector.MatchLabels).AsSelector(),
 		}
 		if err := r.List(ctx, applicationList, opts); err != nil {
-			log.Error(err, "unable to retrieve application")
-			return ctrl.Result{}, err
+			reason = "unable to retrieve application"
+			log.Error(err, reason)
+			conditionStatus = "False"
+			result, err := r.setStatus(ctx, log, secretName, sb, conditionStatus, reason)
+			return []unstructured.Unstructured{}, result, err
 		}
 		log.V(1).Info("application objects retrieved", "Application", applicationList)
 		applications = append(applications, applicationList.Items...)
 	}
-
-	return r.bindApplications(ctx, log, req, sb, psSecret, applications...)
+	return applications, ctrl.Result{}, nil
 }
 
-type errorList []error
-
-func (el errorList) Error() string {
-	msg := ""
-	for _, e := range el {
-		msg += e.Error() + " "
-	}
-	return msg
+func (r *ServiceBindingReconciler) unbindApplications(ctx context.Context, log logr.Logger, req ctrl.Request,
+	sb bindingv1beta1.ServiceBinding, applications ...unstructured.Unstructured) (ctrl.Result, error) {
+	return ctrl.Result{}, nil
 }
 
 func (r *ServiceBindingReconciler) bindApplications(ctx context.Context, log logr.Logger, req ctrl.Request,
@@ -319,7 +428,7 @@ func (r *ServiceBindingReconciler) bindApplications(ctx context.Context, log log
 						reason := "a combination of envs and volumeMounts is mutually exclusive with containers"
 						log.Error(err, reason)
 						var conditionStatus bindingv1beta1.ConditionStatus = "False"
-						return r.setStatus(ctx, log, sb, conditionStatus, reason)
+						return r.setStatus(ctx, log, psSecret.Name, sb, conditionStatus, reason)
 					}
 					for _, container := range ver.Containers {
 						containersPaths = append(containersPaths, strings.Split(container[1:], "."))
@@ -474,7 +583,7 @@ func (r *ServiceBindingReconciler) bindApplications(ctx context.Context, log log
 			reason = "application update failed"
 		}
 
-		_, err = r.setStatus(ctx, log, sb, conditionStatus, reason)
+		_, err = r.setStatus(ctx, log, psSecret.Name, sb, conditionStatus, reason)
 		if err != nil {
 			el = append(el, err)
 		}
@@ -485,10 +594,10 @@ func (r *ServiceBindingReconciler) bindApplications(ctx context.Context, log log
 	return ctrl.Result{}, nil
 }
 
-func (r *ServiceBindingReconciler) setStatus(ctx context.Context, log logr.Logger,
+func (r *ServiceBindingReconciler) setStatus(ctx context.Context, log logr.Logger, secretName string,
 	sb bindingv1beta1.ServiceBinding, conditionStatus bindingv1beta1.ConditionStatus, reason string) (ctrl.Result, error) {
 
-	sb.Status.Binding = &corev1.LocalObjectReference{Name: sb.Name}
+	sb.Status.Binding = &corev1.LocalObjectReference{Name: secretName}
 
 	conditionFound := false
 	for k, cond := range sb.Status.Conditions {
@@ -519,11 +628,40 @@ func (r *ServiceBindingReconciler) setStatus(ctx context.Context, log logr.Logge
 	return ctrl.Result{}, nil
 }
 
+func containsString(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
+}
+
 // SetupWithManager setup controller with manager
 func (r *ServiceBindingReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	pred := predicate.GenerationChangedPredicate{}
+	mapSecretToServiceBinding := func(a client.Object) []reconcile.Request {
+		serviceBindings := &bindingv1beta1.ServiceBindingList{}
+		opts := &client.ListOptions{}
+		if err := r.List(context.Background(), serviceBindings, opts); err != nil {
+			return []reconcile.Request{}
+		}
+		reply := make([]reconcile.Request, 0, len(serviceBindings.Items))
+		for _, sb := range serviceBindings.Items {
+			if sb.Status.Binding != nil && sb.Status.Binding.Name == a.GetName() {
+				reply = append(reply, reconcile.Request{NamespacedName: types.NamespacedName{
+					Namespace: sb.Namespace,
+					Name:      sb.Name,
+				}})
+			}
+		}
+		return reply
+	}
+
+	genPred := predicate.GenerationChangedPredicate{}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&bindingv1beta1.ServiceBinding{}).
-		WithEventFilter(pred).
+		Watches(&source.Kind{Type: &corev1.Secret{}},
+			handler.EnqueueRequestsFromMapFunc(mapSecretToServiceBinding)).
+		WithEventFilter(genPred).
 		Complete(r)
 }

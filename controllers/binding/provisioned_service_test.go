@@ -365,7 +365,7 @@ var _ = Describe("Provisioned Service:", func() {
 			}, podTimeout, podInterval).Should(BeTrue())
 
 			Expect(len(createdServiceBinding.Status.Conditions)).To(Equal(1))
-			Expect(createdServiceBinding.Status.Binding.Name).To(Equal("sb1"))
+			Expect(createdServiceBinding.Status.Binding.Name).To(Equal("secret1"))
 
 			applicationLookupKey := types.NamespacedName{Name: sb.Spec.Application.Name, Namespace: testNamespace}
 
@@ -748,7 +748,7 @@ var _ = Describe("Provisioned Service:", func() {
 			}, podTimeout, podInterval).Should(BeTrue())
 
 			Expect(len(createdServiceBinding.Status.Conditions)).To(Equal(1))
-			Expect(createdServiceBinding.Status.Binding.Name).To(Equal("sb2"))
+			Expect(createdServiceBinding.Status.Binding.Name).To(Equal("secret2"))
 
 			applicationLookupKey := types.NamespacedName{Name: sb.Spec.Application.Name, Namespace: testNamespace}
 

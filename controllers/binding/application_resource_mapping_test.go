@@ -210,7 +210,7 @@ var _ = Describe("Application Resource Mapping:", func() {
 			}, podTimeout, podInterval).Should(BeTrue())
 
 			Expect(len(createdServiceBinding.Status.Conditions)).To(Equal(1))
-			Expect(createdServiceBinding.Status.Binding.Name).To(Equal("sb7"))
+			Expect(createdServiceBinding.Status.Binding.Name).To(Equal("secret7"))
 
 			applicationLookupKey := types.NamespacedName{Name: sb.Spec.Application.Name, Namespace: testNamespace}
 
