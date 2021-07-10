@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.4.1
+    controller-gen.kubebuilder.io/version: v0.5.0
   creationTimestamp: null
   name: servicebindings.binding.x-k8s.io
 spec:
@@ -22,14 +22,10 @@ spec:
         description: ServiceBinding is the Schema for the servicebindings API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             type: object
@@ -37,13 +33,7 @@ spec:
             description: ServiceBindingSpec defines the desired state of ServiceBinding
             properties:
               application:
-                description: 'Application resource to inject the binding info. It
-                  could be any process running within a container. From the spec:
-                  A Service Binding resource **MUST** define a `.spec.application`
-                  which is an `ObjectReference`-like declaration to a `PodSpec`-able
-                  resource.  A `ServiceBinding` **MAY** define the application reference
-                  by-name or by-[label selector][ls]. A name and selector **MUST NOT**
-                  be defined in the same reference.'
+                description: 'Application resource to inject the binding info. It could be any process running within a container. From the spec: A Service Binding resource **MUST** define a `.spec.application` which is an `ObjectReference`-like declaration to a `PodSpec`-able resource.  A `ServiceBinding` **MAY** define the application reference by-name or by-[label selector][ls]. A name and selector **MUST NOT** be defined in the same reference.'
                 properties:
                   apiVersion:
                     description: API version of the referent.
@@ -62,32 +52,21 @@ spec:
                     description: Name of the referent. Mutually exclusive with Selector.
                     type: string
                   selector:
-                    description: Selector of the referents. Mutually exclusive with
-                      Name.
+                    description: Selector of the referents. Mutually exclusive with Name.
                     properties:
                       matchExpressions:
-                        description: matchExpressions is a list of label selector
-                          requirements. The requirements are ANDed.
+                        description: matchExpressions is a list of label selector requirements. The requirements are ANDed.
                         items:
-                          description: A label selector requirement is a selector
-                            that contains values, a key, and an operator that relates
-                            the key and values.
+                          description: A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
                           properties:
                             key:
-                              description: key is the label key that the selector
-                                applies to.
+                              description: key is the label key that the selector applies to.
                               type: string
                             operator:
-                              description: operator represents a key's relationship
-                                to a set of values. Valid operators are In, NotIn,
-                                Exists and DoesNotExist.
+                              description: operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.
                               type: string
                             values:
-                              description: values is an array of string values. If
-                                the operator is In or NotIn, the values array must
-                                be non-empty. If the operator is Exists or DoesNotExist,
-                                the values array must be empty. This array is replaced
-                                during a strategic merge patch.
+                              description: values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
                               items:
                                 type: string
                               type: array
@@ -99,20 +78,14 @@ spec:
                       matchLabels:
                         additionalProperties:
                           type: string
-                        description: matchLabels is a map of {key,value} pairs. A
-                          single {key,value} in the matchLabels map is equivalent
-                          to an element of matchExpressions, whose key field is "key",
-                          the operator is "In", and the values array contains only
-                          "value". The requirements are ANDed.
+                        description: matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
                         type: object
                     type: object
                 type: object
               env:
-                description: Env creates environment variables based on the Secret
-                  values
+                description: Env creates environment variables based on the Secret values
                 items:
-                  description: Environment represents a key to Secret data keys and
-                    name of the environment variable
+                  description: Environment represents a key to Secret data keys and name of the environment variable
                   properties:
                     key:
                       description: Secret data key
@@ -126,18 +99,13 @@ spec:
                   type: object
                 type: array
               name:
-                description: Name is the name of the service as projected into the
-                  application container.  Defaults to .metadata.name.
+                description: Name is the name of the service as projected into the application container.  Defaults to .metadata.name.
                 type: string
               provider:
-                description: Provider is the provider of the service as projected
-                  into the application container
+                description: Provider is the provider of the service as projected into the application container
                 type: string
               service:
-                description: 'Service referencing the binding secret From the spec:
-                  A Service Binding resource **MUST** define a `.spec.service` which
-                  is an `ObjectReference`-like declaration to a Provisioned Service-able
-                  resource.'
+                description: 'Service referencing the binding secret From the spec: A Service Binding resource **MUST** define a `.spec.service` which is an `ObjectReference`-like declaration to a Provisioned Service-able resource.'
                 properties:
                   apiVersion:
                     description: API version of the referent.
@@ -150,8 +118,7 @@ spec:
                     type: string
                 type: object
               type:
-                description: Type is the type of the service as projected into the
-                  application container
+                description: Type is the type of the service as projected into the application container
                 type: string
             required:
             - application
@@ -164,26 +131,20 @@ spec:
                 description: Binding exposes the projected secret for this ServiceBinding
                 properties:
                   name:
-                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?'
                     type: string
                 type: object
               conditions:
-                description: Conditions the latest available observations of a resource's
-                  current state.
+                description: Conditions the latest available observations of a resource's current state.
                 items:
                   description: Condition represents a status condition
                   properties:
                     lastTransitionTime:
-                      description: LastTransitionTime is the last time the condition
-                        transitioned from one status to another. We use VolatileTime
-                        in place of metav1.Time to exclude this from creating equality.Semantic
-                        differences (all other things held constant).
+                      description: LastTransitionTime is the last time the condition transitioned from one status to another. We use VolatileTime in place of metav1.Time to exclude this from creating equality.Semantic differences (all other things held constant).
                       format: date-time
                       type: string
                     message:
-                      description: A human readable message indicating details about
-                        the transition.
+                      description: A human readable message indicating details about the transition.
                       type: string
                     reason:
                       description: The reason for the condition's last transition.
@@ -200,8 +161,7 @@ spec:
                   type: object
                 type: array
               observedGeneration:
-                description: ObservedGeneration is the 'Generation' of the Service
-                  that was last processed by the controller.
+                description: ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.
                 format: int64
                 type: integer
             type: object
