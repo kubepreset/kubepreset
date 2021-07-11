@@ -229,7 +229,7 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	log.V(1).Info("retrieving the Secret object")
 	if err := r.Get(ctx, secretLookupKey, psSecret); err != nil {
 		reason = "unable to retrieve the Secret object"
-		log.Error(err, reason)
+		log.Error(err, reason, "Secret Lookup Key", secretLookupKey, "Secret", psSecret)
 		// TODO: Unbind existing bindings
 		applications, result, err := r.getApplication(ctx, log, req, sb, psSecret.GetName())
 		if err != nil {
