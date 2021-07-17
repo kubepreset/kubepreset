@@ -326,7 +326,7 @@ var _ = Describe("Label Selector:", func() {
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, serviceBindingLookupKey, deletedServiceBinding)
 				return err != nil
-			}, timeout, interval).Should(BeTrue())
+			}, podTimeout, podInterval).Should(BeTrue())
 
 			podList := &corev1.PodList{}
 			Eventually(func() bool {
@@ -369,6 +369,7 @@ var _ = Describe("Label Selector:", func() {
 				"app":         "test6",
 			}
 
+			By("Creating first Deployment")
 			app := &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "app6",
@@ -399,6 +400,7 @@ var _ = Describe("Label Selector:", func() {
 				"app":         "test6",
 			}
 
+			By("Creating second Deployment")
 			secondApp := &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "second-app6",

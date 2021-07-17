@@ -18,6 +18,7 @@ package binding
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path"
 	"strings"
@@ -265,7 +266,11 @@ func (r *ServiceBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if sb.Spec.Provider != "" {
 		cm.Data["provider"] = sb.Spec.Provider
 	}
-
+	if _, ok := psSecret.Data["type"]; !ok {
+		if sb.Spec.Type == "" {
+			return ctrl.Result{}, errors.New("value for `type` not specified in the Secret resource or ServiceBinding resource")
+		}
+	}
 	cm.OwnerReferences = []metav1.OwnerReference{*metav1.NewControllerRef(sb.GetObjectMeta(), sb.GroupVersionKind())}
 	log.V(1).Info("Creating ConfigMap resource for binding", "ConfigMap", cm)
 	if err := r.Create(ctx, cm); err != nil {
@@ -364,9 +369,7 @@ func (r *ServiceBindingReconciler) getApplication(ctx context.Context, log logr.
 			Object: map[string]interface{}{
 				"kind":       sb.Spec.Application.Kind,
 				"apiVersion": sb.Spec.Application.APIVersion,
-				"metadata": map[string]interface{}{
-					"name": sb.Spec.Application.Name,
-				},
+				"metadata":   map[string]interface{}{},
 			},
 		}
 
@@ -383,6 +386,12 @@ func (r *ServiceBindingReconciler) getApplication(ctx context.Context, log logr.
 		}
 		log.V(1).Info("application objects retrieved", "Application", applicationList)
 		applications = append(applications, applicationList.Items...)
+	}
+	if len(applications) == 0 {
+		// Requeue with a time interval is required as the applications is not available to reconcile
+		// In future, probably watching for applications os specific types (Deployment, CronJob etc.) based
+		// on label can be introduced or a webhook can detect application change and trigger reconciliation
+		return applications, ctrl.Result{RequeueAfter: time.Minute * 1}, nil
 	}
 	return applications, ctrl.Result{}, nil
 }
@@ -409,7 +418,7 @@ func (r *ServiceBindingReconciler) bindApplications(ctx context.Context, log log
 	armLookupKey := client.ObjectKey{Name: rm.Resource.Resource + "." + gvk.Group, Namespace: req.NamespacedName.Namespace}
 	armExists := true
 	if err := r.Get(ctx, armLookupKey, armObj); err != nil {
-		log.Error(err, "unable to retrieve ClusterApplicationResourceMapping")
+		log.V(1).Info("unable to retrieve ClusterApplicationResourceMapping", "error", err)
 		armExists = false
 	}
 	log.V(1).Info("ClusterApplicationResourceMapping objects retrieved", "ClusterApplicationResourceMapping", armObj)
@@ -417,7 +426,10 @@ func (r *ServiceBindingReconciler) bindApplications(ctx context.Context, log log
 	var el errorList
 	for _, application := range applications {
 		containersPaths := [][]string{}
+		envsPaths := [][]string{}
+		volumeMountsPaths := [][]string{}
 		volumesPath := []string{"spec", "template", "spec", "volumes"}
+		envsOrVolumeMountsFound := false
 		if armExists {
 			for _, ver := range armObj.Spec.Versions {
 				if ver.Version == gvk.Version || ver.Version == "*" {
@@ -431,8 +443,16 @@ func (r *ServiceBindingReconciler) bindApplications(ctx context.Context, log log
 						var conditionStatus bindingv1beta1.ConditionStatus = "False"
 						return r.setStatus(ctx, log, psSecret.Name, sb, conditionStatus, reason)
 					}
-					for _, container := range ver.Containers {
-						containersPaths = append(containersPaths, strings.Split(container[1:], "."))
+					for _, containersPath := range ver.Containers {
+						containersPaths = append(containersPaths, strings.Split(containersPath[1:], "."))
+					}
+					for _, envsPath := range ver.Envs {
+						envsPaths = append(envsPaths, strings.Split(envsPath[1:], "."))
+						envsOrVolumeMountsFound = true
+					}
+					for _, volumeMountsPath := range ver.VolumeMounts {
+						volumeMountsPaths = append(volumeMountsPaths, strings.Split(volumeMountsPath[1:], "."))
+						envsOrVolumeMountsFound = true
 					}
 					volumesPath = strings.Split(ver.Volumes[1:], ".")
 					break
@@ -474,54 +494,127 @@ func (r *ServiceBindingReconciler) bindApplications(ctx context.Context, log log
 		}
 		log.V(1).Info("application object after setting the update volume", "Application", application)
 
-		for _, containersPath := range containersPaths {
-			log.V(2).Info("referencing containers in an unstructured object")
-			containers, found, err := unstructured.NestedSlice(application.Object, containersPath...)
-			if !found {
-				e := &field.Error{Type: field.ErrorTypeRequired, Field: strings.Join(containersPath, "."), Detail: "empty containers"}
-				log.V(0).Info("containers not found in the application object", "error", e)
-			}
-			if err != nil {
-				log.Error(err, "unable to referenc containers in the application object")
-				return ctrl.Result{}, err
-			}
-
-		CONTAINERS_OUTER:
-			for i := range containers {
-				container := &containers[i]
-				log.V(2).Info("updating container", "container", container)
-				c := &corev1.Container{}
-				u := (*container).(map[string]interface{})
-				if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u, c); err != nil {
+		if !envsOrVolumeMountsFound {
+			for _, containersPath := range containersPaths {
+				log.V(2).Info("referencing containers in an unstructured object")
+				containers, found, err := unstructured.NestedSlice(application.Object, containersPath...)
+				if !found {
+					e := &field.Error{Type: field.ErrorTypeRequired, Field: strings.Join(containersPath, "."), Detail: "no containers"}
+					log.V(0).Info("containers not found in the application object", "error", e)
+				}
+				if err != nil {
+					log.Error(err, "unable to reference containers in the application object")
 					return ctrl.Result{}, err
 				}
 
-				if len(sb.Spec.Application.Containers) > 0 {
-					found := false
-					count := 0
-					for _, v := range sb.Spec.Application.Containers {
-						log.V(2).Info("container", "container value", v, "name", c.Name)
-						if v.StrVal == c.Name {
+			CONTAINERS_OUTER:
+				for i := range containers {
+					container := &containers[i]
+					log.V(2).Info("updating container", "container", container)
+					c := &corev1.Container{}
+					u := (*container).(map[string]interface{})
+					if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u, c); err != nil {
+						return ctrl.Result{}, err
+					}
+
+					if len(sb.Spec.Application.Containers) > 0 {
+						found := false
+						count := 0
+						for _, v := range sb.Spec.Application.Containers {
+							log.V(2).Info("container", "container value", v, "name", c.Name)
+							if v.StrVal == c.Name {
+								break
+							}
+							found = true
+							count++
+						}
+						if found && len(sb.Spec.Application.Containers) == count {
+							continue CONTAINERS_OUTER
+						}
+
+					}
+
+					for _, e := range sb.Spec.Env {
+						c.Env = append(c.Env, corev1.EnvVar{
+							Name:  e.Name,
+							Value: string(psSecret.Data[e.Key]),
+						})
+
+					}
+					mountPath := ""
+					for _, e := range c.Env {
+						if e.Name == ServiceBindingRoot {
+							mountPath = path.Join(e.Value, r.mountPathDir)
 							break
 						}
-						found = true
-						count++
-					}
-					if found && len(sb.Spec.Application.Containers) == count {
-						continue CONTAINERS_OUTER
 					}
 
+					if mountPath == "" {
+						mountPath = path.Join("/bindings", r.mountPathDir)
+						c.Env = append(c.Env, corev1.EnvVar{
+							Name:  ServiceBindingRoot,
+							Value: "/bindings",
+						})
+					}
+
+					volumeMount := corev1.VolumeMount{
+						Name:      r.volumeName,
+						MountPath: mountPath,
+						ReadOnly:  true,
+					}
+
+					volumeMountFound := false
+					for j, vm := range c.VolumeMounts {
+						if strings.HasPrefix(vm.Name, r.volumeNamePrefix) {
+							c.VolumeMounts[j] = volumeMount
+							volumeMountFound = true
+							break
+						}
+					}
+
+					if !volumeMountFound {
+						c.VolumeMounts = append(c.VolumeMounts, volumeMount)
+					}
+
+					nu, err := runtime.DefaultUnstructuredConverter.ToUnstructured(c)
+					if err != nil {
+						return ctrl.Result{}, err
+					}
+
+					containers[i] = nu
 				}
 
-				for _, e := range sb.Spec.Env {
-					c.Env = append(c.Env, corev1.EnvVar{
-						Name:  e.Name,
-						Value: string(psSecret.Data[e.Key]),
-					})
+				log.V(1).Info("updated cntainer with volume and volume mounts", "containers", containers)
 
+				log.V(2).Info("setting the updated containers into the application using the unstructured object")
+				if err := unstructured.SetNestedSlice(application.Object, containers, containersPath...); err != nil {
+					return ctrl.Result{}, err
 				}
-				mountPath := ""
-				for _, e := range c.Env {
+				log.V(1).Info("application object after setting the updated containers", "Application", application)
+			}
+		} else {
+
+			mountPath := ""
+
+			for _, envsPath := range envsPaths {
+				log.V(2).Info("referencing env in an unstructured object")
+				env, found, err := unstructured.NestedMap(application.Object, envsPath...)
+				if !found {
+					e := &field.Error{Type: field.ErrorTypeRequired, Field: strings.Join(envsPath, "."), Detail: "empty env"}
+					log.V(0).Info("env not found in the application object", "error", e)
+				}
+				if err != nil {
+					log.Error(err, "unable to reference env in the application object")
+					return ctrl.Result{}, err
+				}
+
+				ev := []corev1.EnvVar{}
+
+				if err := runtime.DefaultUnstructuredConverter.FromUnstructured(env, ev); err != nil {
+					return ctrl.Result{}, err
+				}
+
+				for _, e := range ev {
 					if e.Name == ServiceBindingRoot {
 						mountPath = path.Join(e.Value, r.mountPathDir)
 						break
@@ -530,46 +623,81 @@ func (r *ServiceBindingReconciler) bindApplications(ctx context.Context, log log
 
 				if mountPath == "" {
 					mountPath = path.Join("/bindings", r.mountPathDir)
-					c.Env = append(c.Env, corev1.EnvVar{
+					ev = append(ev, corev1.EnvVar{
 						Name:  ServiceBindingRoot,
 						Value: "/bindings",
 					})
 				}
 
-				volumeMount := corev1.VolumeMount{
+				for _, e := range sb.Spec.Env {
+					ev = append(ev, corev1.EnvVar{
+						Name:  e.Name,
+						Value: string(psSecret.Data[e.Key]),
+					})
+
+				}
+
+				evUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(ev)
+				if err != nil {
+					return ctrl.Result{}, err
+				}
+
+				log.V(2).Info("setting the updated envs into the application using the unstructured object")
+				if err := unstructured.SetNestedMap(application.Object, evUnstructured, envsPath...); err != nil {
+					return ctrl.Result{}, err
+				}
+				log.V(1).Info("application object after setting the updated envs", "Application", application)
+
+			}
+
+			for _, volumeMountsPath := range volumeMountsPaths {
+				log.V(2).Info("referencing volumeMount in an unstructured object")
+				volumeMount, found, err := unstructured.NestedMap(application.Object, volumeMountsPath...)
+				if !found {
+					e := &field.Error{Type: field.ErrorTypeRequired, Field: strings.Join(volumeMountsPath, "."), Detail: "empty volumeMount"}
+					log.V(0).Info("volumeMount not found in the application object", "error", e)
+				}
+				if err != nil {
+					log.Error(err, "unable to reference volumeMount in the application object")
+					return ctrl.Result{}, err
+				}
+
+				vm := []corev1.VolumeMount{}
+				if err := runtime.DefaultUnstructuredConverter.FromUnstructured(volumeMount, vm); err != nil {
+					return ctrl.Result{}, err
+				}
+
+				volumeMountSB := corev1.VolumeMount{
 					Name:      r.volumeName,
 					MountPath: mountPath,
 					ReadOnly:  true,
 				}
 
 				volumeMountFound := false
-				for j, vm := range c.VolumeMounts {
-					if strings.HasPrefix(vm.Name, r.volumeNamePrefix) {
-						c.VolumeMounts[j] = volumeMount
+				for j, v := range vm {
+					if strings.HasPrefix(v.Name, r.volumeNamePrefix) {
+						vm[j] = volumeMountSB
 						volumeMountFound = true
 						break
 					}
 				}
 
 				if !volumeMountFound {
-					c.VolumeMounts = append(c.VolumeMounts, volumeMount)
+					vm = append(vm, volumeMountSB)
 				}
 
-				nu, err := runtime.DefaultUnstructuredConverter.ToUnstructured(c)
+				vmUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(vm)
 				if err != nil {
 					return ctrl.Result{}, err
 				}
 
-				containers[i] = nu
-			}
+				log.V(2).Info("setting the updated volumeMounts into the application using the unstructured object")
+				if err := unstructured.SetNestedMap(application.Object, vmUnstructured, volumeMountsPath...); err != nil {
+					return ctrl.Result{}, err
+				}
+				log.V(1).Info("application object after setting the updated volumeMounts", "Application", application)
 
-			log.V(1).Info("updated cntainer with volume and volume mounts", "containers", containers)
-
-			log.V(2).Info("setting the updated containers into the application using the unstructured object")
-			if err := unstructured.SetNestedSlice(application.Object, containers, containersPath...); err != nil {
-				return ctrl.Result{}, err
 			}
-			log.V(1).Info("application object after setting the updated containers", "Application", application)
 		}
 
 		var conditionStatus bindingv1beta1.ConditionStatus
